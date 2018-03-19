@@ -15,7 +15,7 @@ def shell_average_2D(spect2D, N_point, k_2d):
     for ind_x, kx in enumerate(k_2d[0]):
         for ind_y, ky in enumerate(k_2d[1]):
                 k_array[i] = round(np.sqrt(kx**2 + ky**2))
-                F_k[i] = 2*np.pi*k_array[i]**2*spect2D[ind_x, ind_y]
+                F_k[i] = np.pi*k_array[i]*spect2D[ind_x, ind_y]
                 i += 1
     all_F_k = sorted(list(zip(k_array, F_k)))
 

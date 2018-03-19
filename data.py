@@ -11,7 +11,7 @@ data_folder = '../data/'
 plot_folder = './plots/'
 filename_npz = data_folder + 'isotropic2048.npz'
 filename_cvs = None
-filename_cvs = '../data/isotropic2048.csv'
+# filename_cvs = '../data/isotropic2048.csv'
 
 Npoints_fine = [2048, 2048]
 Npoints_coarse = [256, 256]

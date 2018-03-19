@@ -84,12 +84,12 @@ def spectra(folder, fname):
         x = np.arange(len(data))
         ax.loglog(x, data, '-', linewidth=2, label=labels[k])
 
-    y = 1e14 * np.power(x[1:], -5./3)
+    y = 1e9 * np.power(x[1:], -5./3)
     ax.loglog(x[1:], y, 'r--', label=r'$-5/3$ slope')
     ax.set_title('Spectra')
     ax.set_ylabel(r'$E$')
     ax.set_xlabel(r'k')
-    ax.axis(ymin=1e5)
+    ax.axis(ymin=1e2)
     plt.legend(loc=0)
 
     fig.subplots_adjust(left=0.16, right=0.95, bottom=0.2, top=0.87)

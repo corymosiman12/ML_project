@@ -51,21 +51,26 @@ def spectral_density(vel_array, dx, N_points, fname):
     fh.close()
 
 
-def sparse_array(data_value, M, start):
+def sparse_array(data_value, n_coarse_points, start):
 
-    if data_value.shape[0] % M:
+    if data_value.shape[0] % n_coarse_points:
         logging.warning('Error: sparse_dict(): Nonzero remainder')
 
-    n_th = int(data_value.shape[0] / M)
+    n_th = int(data_value.shape[0] / n_coarse_points)
     i = int(start % n_th)
     j = int(start // n_th)
+
+    # From point i (row start point) and j (column start point), 
+    # to the end of the array take each nth point
     sparse_data = data_value[i::n_th, j::n_th].copy()
+
+    # returns a array that is n_coarse_points by n_coarse_points
     return sparse_data
 
 
-def sparse_dict(data_dict, M, start):
+def sparse_dict(data_dict, n_coarse_points, start):
 
     sparse = dict()
     for key, value in data_dict.items():
-        sparse[key] = sparse_array(value, M, start)
+        sparse[key] = sparse_array(value, n_coarse_points, start)
     return sparse

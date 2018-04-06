@@ -3,6 +3,8 @@ import logging
 import numpy as np
 import scipy.ndimage as ndimage
 import sys
+import create_features
+import nn_functions as nnf
 
 def main():
 
@@ -16,6 +18,10 @@ def main():
     velocity = data.load_data()
     # data.example_of_data(velocity)
     x_train, y_train, x_test, y_test = data.form_train_test_sets(velocity)
+    x_train_enc = create_features.form_features(x_train)
+    # print(len(x_train_enc.keys()), len(x_train_enc['u'][256].keys()))
+    x_test_enc = create_features.form_features(x_test)
+    print(type(x_train_enc), type(x_test_enc))
 
 if __name__ == '__main__':
     main()

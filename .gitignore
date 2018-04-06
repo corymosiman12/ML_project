@@ -1,0 +1,5 @@
+# Ignore mac file
+.DS_Store
+
+# Ignore python bytecode
+__pycache__/

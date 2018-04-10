@@ -42,10 +42,13 @@ def imagesc(Arrays, titles, name=None):
 
 
     cmap = plt.cm.jet  # define the colormap
+    # cmap = plt.cm.binary
     norm = mpl.colors.Normalize(vmin=-0.7, vmax=0.7)
 
     if len(Arrays) > 1:
         fig, axes = plt.subplots(nrows=1, ncols=len(Arrays), sharey=True, figsize=(10, 4))
+        # fig, axes = plt.subplots(nrows=1, ncols=len(Arrays), sharey=True, figsize=(4, 2.5))
+
         k = 0
         for ax in axes.flat:
             im = ax.imshow(Arrays[k].T, origin='lower', cmap=cmap, norm=norm, interpolation="nearest", extent=axis)
@@ -73,19 +76,19 @@ def imagesc(Arrays, titles, name=None):
 
 def spectra(folder, fname):
 
-    fig = plt.figure(figsize=(6, 5))
+    fig = plt.figure(figsize=(4, 3))
     ax = plt.gca()
     files = glob.glob(folder + '*.spectra')
-    labels = ['filtered', 'fine', 'coarse']
+    labels = ['predicted', 'filtered','true']
 
     for k in range(len(files)):
         f = open(files[k], 'r')
         data = np.array(f.readlines()).astype(np.float)
         x = np.arange(len(data))
         ax.loglog(x, data, '-', linewidth=2, label=labels[k])
-
-    y = 1e9 * np.power(x[1:], -5./3)
-    ax.loglog(x[1:], y, 'r--', label=r'$-5/3$ slope')
+    #
+    # y = 1e9 * np.power(x[1:], -5./3)
+    # ax.loglog(x[1:], y, 'r--', label=r'$-5/3$ slope')
     ax.set_title('Spectra')
     ax.set_ylabel(r'$E$')
     ax.set_xlabel(r'k')

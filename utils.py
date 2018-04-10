@@ -2,11 +2,15 @@ import numpy as np
 from numpy.fft import fftfreq, fft2
 import logging
 
+def timer(start, end, label):
+    hours, rem = divmod(end - start, 3600)
+    minutes, seconds = divmod(rem, 60)
+    logging.info("{:0>2}:{:05.2f} \t {}".format(int(minutes), seconds, label))
+
 def shell_average_2D(spect2D, N_point, k_2d):
     """ Compute the 1D, shell-averaged, spectrum of the 2D Fourier-space
     variable.
     :param spect2D: 2-dimensional complex or real Fourier-space scalar
-    :param km:  wavemode of each n-D wavevector
     :return: 1D, shell-averaged, spectrum
     """
     i = 0
@@ -39,6 +43,7 @@ def spectral_density(vel_array, dx, N_points, fname):
     assumes a real input in physical space.
     """
     k = 2*np.pi*np.array([fftfreq(N_points[0], dx[0]), fftfreq(N_points[1], dx[1])])
+
     spect2d = 0
     for array in vel_array:
         fft_array = fft2(array)
@@ -52,7 +57,16 @@ def spectral_density(vel_array, dx, N_points, fname):
 
 
 def sparse_array(data_value, n_coarse_points, start):
-
+    """ Takes the velocity array (a 2048x2048 array),
+    and using the number of coarse points defined (256),
+    randomly selects an initial starting row and column index,
+    selects every nth point (8 in our case),
+    then returns a smaller array (256,256)
+    :param data_value:      velocity array (2048x2048 array)
+    :param n_coarse_points: number of coarse points
+    :param start:           starting point
+    :return:                smaller array (256,256)
+    """
     if data_value.shape[0] % n_coarse_points:
         logging.warning('Error: sparse_dict(): Nonzero remainder')
 
@@ -69,6 +83,13 @@ def sparse_array(data_value, n_coarse_points, start):
 
 
 def sparse_dict(data_dict, n_coarse_points, start):
+    ''' Takes the velocity dictionary (where each key `u, v, w` corresponds to a 2048x2048 array),
+    and call sparse_arraysparse_array(value, n_coarse_points, start) for each key in dictionary
+    :param data_dict:       velocity dictionary (where each key `u, v, w` corresponds to a 2048x2048 array)
+    :param n_coarse_points: number of coarse points
+    :param start:           initial starting point
+    :return:                a dictionary of smaller arrays (256,256) with the same keys (`u, v, w`)
+    '''
 
     sparse = dict()
     for key, value in data_dict.items():

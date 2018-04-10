@@ -51,22 +51,29 @@ def example_of_data(velocity):
         vel_filtered[key] = ndimage.gaussian_filter(value, sigma=1)
 
     logging.info('Plot data')
-    plotting.imagesc([velocity['u'], velocity['v'], velocity['w']], [r'$u$', r'$v$', r'$w$'], plot_folder + 'fine_data')
-    plotting.imagesc([vel_coarse['u'], vel_coarse['v'], vel_coarse['w']], [r'$u$', r'$v$', r'$w$'], plot_folder + 'coarse_data')
-    plotting.imagesc([vel_filtered['u'], vel_filtered['v'], vel_filtered['w']], [r'$\widetilde{u}$', r'$\widetilde{v}$', r'$\widetilde{w}$'],
-    plot_folder + 'gaussian filter')
+    plotting.imagesc([vel_coarse['u'], vel_filtered['u']], ['true', 'filtered'], plot_folder + 'data')
 
-    logging.info('Calculating spectra')
-    utils.spectral_density([velocity['u'], velocity['v'], velocity['w']], dx_fine, [Npoints_fine, Npoints_fine], plot_folder+'fine_grid')
+    # plotting.imagesc([velocity['u'], velocity['v'], velocity['w']], [r'$u$', r'$v$', r'$w$'], plot_folder + 'fine_data')
+    # plotting.imagesc([vel_coarse['u'], vel_coarse['v'], vel_coarse['w']], [r'$u$', r'$v$', r'$w$'], plot_folder + 'coarse_data')
+    # plotting.imagesc([vel_filtered['u'], vel_filtered['v'], vel_filtered['w']], ['R', 'G', 'B'],
+    # plot_folder + 'gaussian filter')
+    # [r'$\widetilde{u}$', r'$\widetilde{v}$', r'$\widetilde{w}$']
+    # logging.info('Calculating spectra')
+    # utils.spectral_density([velocity['u'], velocity['v'], velocity['w']], dx_fine, [Npoints_fine, Npoints_fine], plot_folder+'fine_grid')
     utils.spectral_density([vel_coarse['u'], vel_coarse['v'], vel_coarse['w']], dx_coarse, [Npoints_coarse, Npoints_coarse], plot_folder+'coarse_grid')
     utils.spectral_density([vel_filtered['u'], vel_filtered['v'], vel_filtered['w']], dx_coarse, [Npoints_coarse, Npoints_coarse], plot_folder+'filtered')
     plotting.spectra(plot_folder, plot_folder+'spectra')
 
 def form_train_test_sets(velocity):
+    '''
+    Implement the shifting strategy and return 4 data structures: data_train, data_test, filtered_train, filtered_test.
+    :param velocity:  velocity dictionary (where each key `u, v, w` corresponds to a 2048x2048 array)
+    :return:          
+    '''
     logging.info('Creating training and test data sets')
     if Npoints_fine % Npoints_coarse != 0:
         logging.warning('Warning: Nonzero remainder')
-    number_of_examples = int((Npoints_fine/Npoints_coarse)**2-1)
+    number_of_examples = int((Npoints_fine/Npoints_coarse)**2)
     # training set
     ind = np.random.choice(range(number_of_examples), size=4, replace=False)
     data_train = utils.sparse_dict(velocity, Npoints_coarse, ind[0])

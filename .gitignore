@@ -7,3 +7,5 @@ _mac/
 *.xml
 .idea/
 .DS_Store
+
+test.py

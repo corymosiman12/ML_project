@@ -7,4 +7,5 @@ __pycache__/
 # Don't upload plots
 plots/
 
+# Ignore testing file
 test.py

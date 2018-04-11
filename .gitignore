@@ -3,3 +3,6 @@
 
 # Ignore python bytecode
 __pycache__/
+
+# Don't upload plots
+plots/

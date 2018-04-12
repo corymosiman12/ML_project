@@ -21,7 +21,7 @@ def main():
     logging.info('python {}.{}.{}'.format(sys.version_info[0], sys.version_info[1], sys.version_info[2]))
     logging.info('numpy {}'.format(np.__version__))
     logging.info('64 bit {}\n'.format(sys.maxsize > 2 ** 32))
-
+########################## OLGA START ##########################
     velocity = data.load_data()
     # data.example_of_data(velocity)
     x_train, y_train, x_test, y_test = data.form_train_test_sets(velocity)
@@ -53,8 +53,11 @@ def main():
         utils.spectral_density([y_predict[test_example]['u'], y_predict[test_example]['v'], y_predict[test_example]['w']],
                                [2*np.pi/256, 2*np.pi/256], [256, 256], plot_folder+'predicted' + str(test_example))
         plotting.spectra(plot_folder, plot_folder+'spectra' + str(test_example), test_example)
+    ########################## OLGA END ##########################
+    
     ######################################
 
+    ########################## CORY START ##########################
     # x_train_enc = create_features.form_features(x_train)
     # print(len(x_train_enc.keys()), len(x_train_enc['u'][256].keys()))
     # x_test_enc = create_features.form_features(x_test)
@@ -83,7 +86,7 @@ def main():
 
     # Predict on each of the test sets and plot MSE:
     model.evaluate_test_sets(X_test_enc, y_test_reshaped)
-
+    ########################## CORY END ##########################
 
 if __name__ == '__main__':
     main()

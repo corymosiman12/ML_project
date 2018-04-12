@@ -68,7 +68,7 @@ def form_train_test_sets(velocity):
     '''
     Implement the shifting strategy and return 4 data structures: data_train, data_test, filtered_train, filtered_test.
     :param velocity:  velocity dictionary (where each key `u, v, w` corresponds to a 2048x2048 array)
-    :return:          
+    :return:
     '''
     logging.info('Creating training and test data sets')
     if Npoints_fine % Npoints_coarse != 0:
@@ -76,20 +76,20 @@ def form_train_test_sets(velocity):
     number_of_examples = int((Npoints_fine/Npoints_coarse)**2)
     # training set
     ind = np.random.choice(range(number_of_examples), size=4, replace=False)
-    data_train = utils.sparse_dict(velocity, Npoints_coarse, ind[0])
+    data_train = utils.sparse_dict(velocity, Npoints_coarse, ind[0])  # use first random number to draw training set
     # testing sets
-    data_test = []      # I use list of dictionaries.
-    for i in ind[1:]:
+    data_test = []          # I use list of dictionaries.
+    for i in ind[1:]:       # use other to random numbers to draw test sets
         data_test.append(utils.sparse_dict(velocity, Npoints_coarse, i))
 
     filtered_train = dict()
     for key, value in data_train.items():
-        filtered_train[key] = ndimage.gaussian_filter(value, sigma=1)
+        filtered_train[key] = ndimage.gaussian_filter(value, sigma=1, truncate=500)
 
     filtered_test = [dict(), dict(), dict()]
     sigma = [1, 1.1, 0.9]
     for i in range(3):
         for key, value in data_test[i].items():
-            filtered_test[i][key] = ndimage.gaussian_filter(value, sigma=sigma[i])
+            filtered_test[i][key] = ndimage.gaussian_filter(value, sigma=sigma[i], truncate=500)
 
     return filtered_train, data_train, filtered_test, data_test

@@ -30,30 +30,36 @@ def predicting(x, W, b, f, W_opt):
 
 def transform_dict_for_nn(x_dict, y_dict):
 
-    n = x_dict['u'].size
-
-    x = np.empty((9, 3*n))  # 9*number of examples (256*256)
-    y = np.empty(3*n)
+    n = x_dict['u'].size   # 256^3 = 16777216
+    y = np.empty(3 * n)
+    x_size = x_dict['u'].shape[0]
+    y_size = x_dict['u'].shape[1]
+    logging.info('Use {} inputs'.format(nn_structure[0]))
+    x = np.empty((nn_structure[0], 3 * n))  # 9 * number of examples (256*256)*number of velocity components
+    keys = ['w', 'u', 'v', 'w', 'u']
 
     count = 0
-    for key in x_dict.keys():
-        x_array = x_dict[key]
-        y_array = y_dict[key]
-        for i in range(x_array.shape[0]):
-            for j in range(x_array.shape[1]):
-
-                if i == (x_array.shape[0]-1):
+    for key_i in range(1, 4):
+        for i in range(x_size):
+            for j in range(y_size):
+                if i == (x_size - 1):
                     x_ind = np.array([i - 1, i - 1, i - 1, i, i, i, 0, 0, 0])
                 else:
                     x_ind = np.array([i - 1, i - 1, i - 1, i, i, i, i + 1, i + 1, i + 1])
-                if j == (x_array.shape[1]-1):
+                if j == (y_size - 1):
                     y_ind = np.array([j - 1, j, 0, j - 1, j, 0, j - 1, j, 0])
                 else:
                     y_ind = np.array([j - 1, j, j + 1, j - 1, j, j + 1, j - 1, j, j + 1])
 
-                ind = count * n + i * x_array.shape[0] + j
-                x[:, ind] = x_array[x_ind, y_ind]
-                y[ind] = y_array[i, j]
+                ind = count * n + i * x_size + j
+
+                if nn_structure[0] == 9:
+                    x[:, ind] = x_dict[keys[key_i]][x_ind, y_ind]
+                elif nn_structure[0] == 27:
+                    x[:, ind] = np.hstack((x_dict[keys[key_i]][x_ind, y_ind],
+                                           x_dict[keys[key_i-1]][x_ind, y_ind],
+                                           x_dict[keys[key_i+1]][x_ind, y_ind]))
+                y[ind] = y_dict[keys[key_i]][i, j]
         count += 1
 
     return x, y
@@ -70,6 +76,7 @@ def untransform_y(y, shape):
         j = (ind % n) % shape[0]
         y_dict[keys[k]][i, j] = y[ind]
     return y_dict
+
 
 def extreme_learning_machine(x_train, y_train, x_test, y_test):
 
@@ -88,7 +95,6 @@ def extreme_learning_machine(x_train, y_train, x_test, y_test):
 
     logging.info('testing...')
     for i in range(len(x_test)):
-        print(i)
         x, y = transform_dict_for_nn(x_test[i], y_test[i])
         y_pred = predicting(x, W, b, tan_sigmoid, W_opt)
         error = np.linalg.norm(y - y_pred) / n

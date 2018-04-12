@@ -74,15 +74,16 @@ def imagesc(Arrays, titles, name=None):
     gc.collect()
 
 
-def spectra(folder, fname):
+def spectra(folder, fname, ind):
 
+    ind = str(ind)
     fig = plt.figure(figsize=(4, 3))
     ax = plt.gca()
-    files = glob.glob(folder + '*.spectra')
+    files = ['predicted'+ind+'.spectra', 'filtered'+ind+'.spectra', 'true'+ind+'.spectra']
     labels = ['predicted', 'filtered','true']
 
     for k in range(len(files)):
-        f = open(files[k], 'r')
+        f = open(folder+files[k], 'r')
         data = np.array(f.readlines()).astype(np.float)
         x = np.arange(len(data))
         ax.loglog(x, data, '-', linewidth=2, label=labels[k])

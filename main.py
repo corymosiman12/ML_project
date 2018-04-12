@@ -6,8 +6,11 @@ import plotting
 import utils
 import scipy.ndimage as ndimage
 import sys
-import create_features
+import create_features as cf
 import nn_functions as nnf
+import nn_keras as nnk
+from keras.wrappers.scikit_learn import KerasRegressor
+# import 
 
 plot_folder = './plots/'
 
@@ -56,6 +59,30 @@ def main():
     # print(len(x_train_enc.keys()), len(x_train_enc['u'][256].keys()))
     # x_test_enc = create_features.form_features(x_test)
     # print(type(x_train_enc), type(x_test_enc))
+    # Load in velocity data
+    velocity = data.load_data()
+
+    # form testing and training sets for velocity data
+    X_train, y_train, X_test, y_test = data.form_train_test_sets(velocity)
+
+    # reformat testing and training sets into true feature vectors
+    # note: feature vectors stored within dict()
+    X_train_enc = cf.form_features(X_train)
+    X_test_enc = cf.form_features(X_test)
+
+    y_train_reshaped = cf.my_reshaper(y_train)
+    y_test_reshaped = cf.my_reshaper(y_test)
+    logging.info("X_train_enc['u'] shape: {}".format(X_train_enc['u'].shape))
+    logging.info("y_train_reshaped['u'] shape: {}\n".format(y_train_reshaped['u'].shape))
+
+    # Create single layer model
+    epochs = 5
+    num_neurons = 100
+    model = nnk.my_keras(epochs, num_neurons)
+    model.evaluate_model(X_train_enc['u'], y_train_reshaped['u'], X_test_enc[0]['u'], y_test_reshaped[0]['u'])
+
+    # Predict on each of the test sets and plot MSE:
+    model.evaluate_test_sets(X_test_enc, y_test_reshaped)
 
 
 if __name__ == '__main__':

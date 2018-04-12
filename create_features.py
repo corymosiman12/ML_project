@@ -166,6 +166,20 @@ def create_array(features):
         all_values.append(row_values)
     return np.array((all_values)).reshape(256*256, 9)
 
+def my_reshaper(y):
+    if isinstance(y, list):
+        new_list = []
+        for y_dict in y:
+            new_dict = {}
+            for key, values in y_dict.items():
+                new_dict[key] = values.reshape(256*256, -1)
+                new_list.append(new_dict)
+        return new_list
+    elif isinstance(y, dict):
+        new_dict = {}
+        for key, values in y.items():
+            new_dict[key] = values.reshape(256*256, -1)
+        return new_dict
 
     # print(new_array[0])
     # print(all_values[0][0] == new_array[0])

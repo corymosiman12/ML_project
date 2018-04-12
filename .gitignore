@@ -8,4 +8,11 @@ _mac/
 .idea/
 .DS_Store
 
+# Ignore python bytecode
+__pycache__/
+
+# Don't upload plots
+plots/
+
+# Ignore testing file
 test.py

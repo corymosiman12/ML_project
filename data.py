@@ -84,12 +84,12 @@ def form_train_test_sets(velocity):
 
     filtered_train = dict()
     for key, value in data_train.items():
-        filtered_train[key] = ndimage.gaussian_filter(value, sigma=1, truncate=500)
+        filtered_train[key] = ndimage.gaussian_filter(value, sigma=1, mode='wrap, 'truncate=500)
 
     filtered_test = [dict(), dict(), dict()]
     sigma = [1, 1.1, 0.9]
     for i in range(3):
         for key, value in data_test[i].items():
-            filtered_test[i][key] = ndimage.gaussian_filter(value, sigma=sigma[i], truncate=500)
+            filtered_test[i][key] = ndimage.gaussian_filter(value, sigma=sigma[i], mode='wrap', truncate=500)
 
     return filtered_train, data_train, filtered_test, data_test

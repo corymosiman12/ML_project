@@ -22,37 +22,37 @@ def main():
     logging.info('numpy {}'.format(np.__version__))
     logging.info('64 bit {}\n'.format(sys.maxsize > 2 ** 32))
 ########################## OLGA START ##########################
-    velocity = data.load_data()
-    # data.example_of_data(velocity)
-    x_train, y_train, x_test, y_test = data.form_train_test_sets(velocity)
+    # velocity = data.load_data()
+    # # data.example_of_data(velocity)
+    # x_train, y_train, x_test, y_test = data.form_train_test_sets(velocity)
 
-    #################################
-    logging.info('NN is Extreme learning machine (algorithm from the paper)\n')
-    y_predict = elm.extreme_learning_machine(x_train, y_train, x_test, y_test)
+    # #################################
+    # logging.info('NN is Extreme learning machine (algorithm from the paper)\n')
+    # y_predict = elm.extreme_learning_machine(x_train, y_train, x_test, y_test)
 
-    logging.info('Plot predicted velocities')
-    for test_example in range(3):
-        plotting.imagesc([y_test[test_example]['u'][0:32,0:32],
-                          x_test[test_example]['u'][0:32,0:32],
-                          y_predict[test_example]['u'][0:32,0:32]],
-                         [r'$u_{true}$', r'$u_{filtered}$',  r'$u_{predicted}$'], plot_folder + 'u_'+ str(test_example))
-        plotting.imagesc([y_test[test_example]['v'][0:32,0:32],
-                          x_test[test_example]['v'][0:32,0:32],
-                          y_predict[test_example]['v'][0:32,0:32]],
-                         [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], plot_folder + 'v_'+ str(test_example))
-        plotting.imagesc([y_test[test_example]['w'][0:32,0:32],
-                          x_test[test_example]['w'][0:32,0:32],
-                          y_predict[test_example]['w'][0:32,0:32]],
-                         [r'$u_{true}$', r'$u_{filtered}$',  r'$u_{predicted}$'], plot_folder + 'w_'+ str(test_example))
+    # logging.info('Plot predicted velocities')
+    # for test_example in range(3):
+    #     plotting.imagesc([y_test[test_example]['u'][0:32,0:32],
+    #                       x_test[test_example]['u'][0:32,0:32],
+    #                       y_predict[test_example]['u'][0:32,0:32]],
+    #                      [r'$u_{true}$', r'$u_{filtered}$',  r'$u_{predicted}$'], plot_folder + 'u_'+ str(test_example))
+    #     plotting.imagesc([y_test[test_example]['v'][0:32,0:32],
+    #                       x_test[test_example]['v'][0:32,0:32],
+    #                       y_predict[test_example]['v'][0:32,0:32]],
+    #                      [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], plot_folder + 'v_'+ str(test_example))
+    #     plotting.imagesc([y_test[test_example]['w'][0:32,0:32],
+    #                       x_test[test_example]['w'][0:32,0:32],
+    #                       y_predict[test_example]['w'][0:32,0:32]],
+    #                      [r'$u_{true}$', r'$u_{filtered}$',  r'$u_{predicted}$'], plot_folder + 'w_'+ str(test_example))
 
-        logging.info('Calculate ang plot spectra')
-        utils.spectral_density([y_test[test_example]['u'], y_test[test_example]['v'], y_test[test_example]['w']],
-                               [2*np.pi/256, 2*np.pi/256], [256, 256], plot_folder+'true' + str(test_example))
-        utils.spectral_density([x_test[test_example]['u'], x_test[test_example]['v'], x_test[test_example]['w']],
-                               [2*np.pi/256, 2*np.pi/256], [256, 256], plot_folder+'filtered' + str(test_example))
-        utils.spectral_density([y_predict[test_example]['u'], y_predict[test_example]['v'], y_predict[test_example]['w']],
-                               [2*np.pi/256, 2*np.pi/256], [256, 256], plot_folder+'predicted' + str(test_example))
-        plotting.spectra(plot_folder, plot_folder+'spectra' + str(test_example), test_example)
+    #     logging.info('Calculate ang plot spectra')
+    #     utils.spectral_density([y_test[test_example]['u'], y_test[test_example]['v'], y_test[test_example]['w']],
+    #                            [2*np.pi/256, 2*np.pi/256], [256, 256], plot_folder+'true' + str(test_example))
+    #     utils.spectral_density([x_test[test_example]['u'], x_test[test_example]['v'], x_test[test_example]['w']],
+    #                            [2*np.pi/256, 2*np.pi/256], [256, 256], plot_folder+'filtered' + str(test_example))
+    #     utils.spectral_density([y_predict[test_example]['u'], y_predict[test_example]['v'], y_predict[test_example]['w']],
+    #                            [2*np.pi/256, 2*np.pi/256], [256, 256], plot_folder+'predicted' + str(test_example))
+    #     plotting.spectra(plot_folder, plot_folder+'spectra' + str(test_example), test_example)
     ########################## OLGA END ##########################
     
     ######################################
@@ -86,6 +86,30 @@ def main():
 
     # Predict on each of the test sets and plot MSE:
     model.evaluate_test_sets(X_test_enc, y_test_reshaped)
+
+    logging.info('Plot predicted velocities')
+    for test_example in range(3):
+        plotting.imagesc([y_test[test_example]['u'][0:32,0:32],
+                          X_test[test_example]['u'][0:32,0:32],
+                          model.predictions[test_example][0:32,0:32]],
+                         [r'$u_{true}$', r'$u_{filtered}$',  r'$u_{predicted}$'], plot_folder + 'u_'+ str(test_example))
+        # plotting.imagesc([y_test[test_example]['v'][0:32,0:32],
+        #                   x_test[test_example]['v'][0:32,0:32],
+        #                   y_predict[test_example]['v'][0:32,0:32]],
+        #                  [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], plot_folder + 'v_'+ str(test_example))
+        # plotting.imagesc([y_test[test_example]['w'][0:32,0:32],
+        #                   x_test[test_example]['w'][0:32,0:32],
+        #                   y_predict[test_example]['w'][0:32,0:32]],
+        #                  [r'$u_{true}$', r'$u_{filtered}$',  r'$u_{predicted}$'], plot_folder + 'w_'+ str(test_example))
+
+        # logging.info('Calculate ang plot spectra')
+        utils.spectral_density([y_test[test_example]['u'], y_test[test_example]['v'], y_test[test_example]['w']],
+                               [2*np.pi/256, 2*np.pi/256], [256, 256], plot_folder+'true' + str(test_example))
+        utils.spectral_density([X_test[test_example]['u'], X_test[test_example]['v'], X_test[test_example]['w']],
+                               [2*np.pi/256, 2*np.pi/256], [256, 256], plot_folder+'filtered' + str(test_example))
+        utils.spectral_density([model.predictions[test_example]['u'], model.predictions[test_example]['v'], model.predictions[test_example]['w']],
+                               [2*np.pi/256, 2*np.pi/256], [256, 256], plot_folder+'predicted' + str(test_example))
+        # plotting.spectra(plot_folder, plot_folder+'spectra' + str(test_example), test_example)
     ########################## CORY END ##########################
 
 if __name__ == '__main__':

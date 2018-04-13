@@ -61,8 +61,9 @@ class my_keras():
     def evaluate_test_sets(self, X_test_list, y_test_list):
         for test_set in range(len(X_test_list)):
             prediction = self.estimator.predict(X_test_list[test_set]['u'])
+            print(type(prediction), prediction.shape)
             error = mean_squared_error(y_test_list[test_set]['u'], prediction)
-            self.predictions.append(prediction)
+            self.predictions.append(prediction.reshape(-1,256))
             self.mse.append(error)
         self.plot_mse()
 

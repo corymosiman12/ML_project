@@ -64,12 +64,14 @@ def example_of_data(velocity):
     utils.spectral_density([vel_filtered['u'], vel_filtered['v'], vel_filtered['w']], dx_coarse, [Npoints_coarse, Npoints_coarse], plot_folder+'filtered')
     plotting.spectra(plot_folder, plot_folder+'spectra')
 
+
 def form_train_test_sets(velocity):
-    '''
-    Implement the shifting strategy and return 4 data structures: data_train, data_test, filtered_train, filtered_test.
+    """
+    Implement the shifting strategy and return 4 data structures:
+    data_train, data_test, filtered_train, filtered_test.
     :param velocity:  velocity dictionary (where each key `u, v, w` corresponds to a 2048x2048 array)
     :return:
-    '''
+    """
     logging.info('Creating training and test data sets')
     if Npoints_fine % Npoints_coarse != 0:
         logging.warning('Warning: Nonzero remainder')
@@ -84,7 +86,7 @@ def form_train_test_sets(velocity):
 
     filtered_train = dict()
     for key, value in data_train.items():
-        filtered_train[key] = ndimage.gaussian_filter(value, sigma=1, mode='wrap, 'truncate=500)
+        filtered_train[key] = ndimage.gaussian_filter(value, sigma=1,  mode='wrap', truncate=500)
 
     filtered_test = [dict(), dict(), dict()]
     sigma = [1, 1.1, 0.9]

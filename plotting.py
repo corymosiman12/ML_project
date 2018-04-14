@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import gc
 import glob
+import logging
+import utils
 
 
 
@@ -36,10 +38,8 @@ mpl.rcParams['ytick.minor.width'] = 1
 plt.rcParams['axes.linewidth'] = 1
 
 
-
 def imagesc(Arrays, titles, name=None):
     axis = [0, np.pi, 0, np.pi]
-
 
     cmap = plt.cm.jet  # define the colormap
     # cmap = plt.cm.binary
@@ -98,4 +98,32 @@ def spectra(folder, fname, ind):
 
     fig.subplots_adjust(left=0.16, right=0.95, bottom=0.2, top=0.87)
     fig.savefig(fname)
+
+
+def plot_velocities_and_spectra(x_test, y_test, y_predict, plot_folder):
+    logging.info('Plot predicted velocities')
+    for test_example in range(3):
+        imagesc([y_test[test_example]['u'][0:32, 0:32],
+                 x_test[test_example]['u'][0:32, 0:32],
+                 y_predict[test_example]['u'][0:32, 0:32]],
+                [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], plot_folder + 'u_' + str(test_example))
+        imagesc([y_test[test_example]['v'][0:32, 0:32],
+                 x_test[test_example]['v'][0:32, 0:32],
+                 y_predict[test_example]['v'][0:32, 0:32]],
+                [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], plot_folder + 'v_' + str(test_example))
+        imagesc([y_test[test_example]['w'][0:32, 0:32],
+                 x_test[test_example]['w'][0:32, 0:32],
+                 y_predict[test_example]['w'][0:32, 0:32]],
+                [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], plot_folder + 'w_' + str(test_example))
+
+        logging.info('Calculate ang plot spectra')
+        utils.spectral_density([y_test[test_example]['u'], y_test[test_example]['v'], y_test[test_example]['w']],
+                               [2 * np.pi / 256, 2 * np.pi / 256], [256, 256], plot_folder + 'true' + str(test_example))
+        utils.spectral_density([x_test[test_example]['u'], x_test[test_example]['v'], x_test[test_example]['w']],
+                               [2 * np.pi / 256, 2 * np.pi / 256], [256, 256],
+                               plot_folder + 'filtered' + str(test_example))
+        utils.spectral_density(
+            [y_predict[test_example]['u'], y_predict[test_example]['v'], y_predict[test_example]['w']],
+            [2 * np.pi / 256, 2 * np.pi / 256], [256, 256], plot_folder + 'predicted' + str(test_example))
+        spectra(plot_folder, plot_folder + 'spectra' + str(test_example), test_example)
 

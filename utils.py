@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.fft import fftfreq, fft2
+from numpy.fft import fftfreq, fft2, fftn
 import logging
 
 def timer(start, end, label):
@@ -7,20 +7,28 @@ def timer(start, end, label):
     minutes, seconds = divmod(rem, 60)
     logging.info("{:0>2}:{:05.2f} \t {}".format(int(minutes), seconds, label))
 
-def shell_average_2D(spect2D, N_point, k_2d):
-    """ Compute the 1D, shell-averaged, spectrum of the 2D Fourier-space
+
+def shell_average(spect, N_points, k):
+    """ Compute the 1D, shell-averaged, spectrum of the 2D or 3D Fourier-space
     variable.
-    :param spect2D: 2-dimensional complex or real Fourier-space scalar
+    :param spect: 2D or 3D complex or real Fourier-space scalar
     :return: 1D, shell-averaged, spectrum
     """
     i = 0
-    F_k = np.zeros(N_point[0]*N_point[1])
+    F_k = np.zeros(tuple(N_points)).flatten()
     k_array = np.empty_like(F_k)
-    for ind_x, kx in enumerate(k_2d[0]):
-        for ind_y, ky in enumerate(k_2d[1]):
+    for ind_x, kx in enumerate(k[0]):
+        for ind_y, ky in enumerate(k[1]):
+            if len(N_points) == 2:
                 k_array[i] = round(np.sqrt(kx**2 + ky**2))
-                F_k[i] = np.pi*k_array[i]*spect2D[ind_x, ind_y]
+                F_k[i] = np.pi*k_array[i]*spect[ind_x, ind_y]
                 i += 1
+            else:
+                for ind_z, kz in enumerate(k[2]):
+                    k_array[i] = round(np.sqrt(kx ** 2 + ky ** 2 + kz ** 2))
+                    F_k[i] = 2 * np.pi * k_array[i] ** 2 * spect[ind_x, ind_y, ind_z]
+                    i += 1
+
     all_F_k = sorted(list(zip(k_array, F_k)))
 
     x, y = [all_F_k[0][0]], [all_F_k[0][1]]
@@ -37,20 +45,30 @@ def shell_average_2D(spect2D, N_point, k_2d):
     return x, y
 
 
-def spectral_density(vel_array, dx, N_points, fname):
+def spectral_density(vel_dict, fname):
     """
     Write the 1D power spectral density of var to text file. Method
     assumes a real input in physical space.
     """
-    k = 2*np.pi*np.array([fftfreq(N_points[0], dx[0]), fftfreq(N_points[1], dx[1])])
+    N_points = np.array(vel_dict['u'].shape)
+    dx = 2*np.pi/N_points
+    spectrum = 0
+    if len(N_points) == 2:
+        k = 2 * np.pi * np.array([fftfreq(N_points[0], dx[0]), fftfreq(N_points[1], dx[1])])
+        for key, array in vel_dict.items():
+            fft_array = fft2(array)
+            spectrum += np.real(fft_array * np.conj(fft_array))
+    elif len(N_points) == 3:
+        k = 2 * np.pi * np.array(
+            [fftfreq(N_points[0], dx[0]), fftfreq(N_points[1], dx[1]), fftfreq(N_points[2], dx[2])])
+        for key, array in vel_dict.items():
+            fft_array = fftn(array)
+            spectrum += np.real(fft_array * np.conj(fft_array))
 
-    spect2d = 0
-    for array in vel_array:
-        fft_array = fft2(array)
-        spect2d += np.real(fft_array * np.conj(fft_array))
     logging.debug('done transform')
-    x, y = shell_average_2D(spect2d, N_points, k)
+    x, y = shell_average(spectrum, N_points, k)
     logging.debug('done shell average')
+
     fh = open(fname + '.spectra', 'w')
     fh.writelines(["%s\n" % item for item in y])
     fh.close()
@@ -69,36 +87,53 @@ def sparse_array(data_value, n_coarse_points, start):
     """
     if data_value.shape[0] % n_coarse_points:
         logging.warning('Error: sparse_dict(): Nonzero remainder')
+    if int(data_value.shape[0] / n_coarse_points) == 1:
+        return data_value
 
     n_th = int(data_value.shape[0] / n_coarse_points)
-    i = int(start % n_th)
-    j = int(start // n_th)
 
-    # From point i (row start point) and j (column start point), 
-    # to the end of the array take each nth point
-    sparse_data = data_value[i::n_th, j::n_th].copy()
+    if len(data_value.shape) == 2:
+        i = int(start % n_th)
+        j = int(start // n_th)
+        # From point i (row start point) and j (column start point),
+        # to the end of the array take each nth point
+        sparse_data = data_value[i::n_th, j::n_th].copy()
 
-    # returns a array that is n_coarse_points by n_coarse_points
+        # returns a array that is n_coarse_points by n_coarse_points
+    elif len(data_value.shape) == 3:
+        k = int(start % n_th)
+        j = int(start // n_th % n_th)
+        i = int(start // n_th // n_th)
+        sparse_data = data_value[i::n_th, j::n_th, k::n_th].copy()
+
     return sparse_data
 
 
 def sparse_dict(data_dict, n_coarse_points, start):
-    ''' Takes the velocity dictionary (where each key `u, v, w` corresponds to a 2048x2048 array),
+    """Takes the velocity dictionary (where each key `u, v, w` corresponds to a 2048x2048 array),
     and call sparse_arraysparse_array(value, n_coarse_points, start) for each key in dictionary
     :param data_dict:       velocity dictionary (where each key `u, v, w` corresponds to a 2048x2048 array)
     :param n_coarse_points: number of coarse points
     :param start:           initial starting point
     :return:                a dictionary of smaller arrays (256,256) with the same keys (`u, v, w`)
-    '''
+    """
 
     sparse = dict()
     for key, value in data_dict.items():
         sparse[key] = sparse_array(value, n_coarse_points, start)
+    logging.info('Coarse data shape is {}'.format(sparse['u'].shape))
     return sparse
 
 
-def transform_dict_for_nn(x_dict, y_dict, n_input):
 
+def transform_dict_for_nn(x_dict, y_dict, n_input):
+    """ Transform dictionary of 'u', 'v', 'w' into array of form [n_input, 256*256*3]
+    (combining all 3 velocities in 1 array)
+    :param x_dict: dictionary with ['u'], ['v'], ['w'] of training data (filtered velocity)
+    :param y_dict: dictionary with ['u'], ['v'], ['w'] of true data
+    :param n_input: number of input parameters 9, 27 or 25(5*5 stencil)
+    :return: (x, y) where x is array of form [n_input, 256*256*3] and y is array of form [256*256*3]
+    """
     n = x_dict['u'].size   # 256^3 = 16777216
     y = np.empty(3 * n)
     x_size = x_dict['u'].shape[0]
@@ -108,18 +143,18 @@ def transform_dict_for_nn(x_dict, y_dict, n_input):
     keys = ['w', 'u', 'v', 'w', 'u']
 
     count = 0
-    for key_i in range(1, 4):
+    for key_i in range(1, 4):  # for each velocity u, v, w
         for i in range(x_size):
             for j in range(y_size):
                 # stencil 5*5
                 if n_input == 25:
-                    if i == (x_size - 2):
+                    if i == (x_size - 2):       # need to check if it is corner
                         x_ind = np.array([i - 2, i - 2, i - 2, i - 2, i - 2,
                                           i - 1, i - 1, i - 1, i - 1, i - 1,
                                           i, i, i, i, i,
                                           i + 1, i + 1, i + 1, i + 1, i + 1,
                                           0, 0, 0, 0, 0])
-                    elif i == (x_size - 1):
+                    elif i == (x_size - 1):     # need to check if it is corner
                         x_ind = np.array([i - 2, i - 2, i - 2, i - 2, i - 2,
                                           i - 1, i - 1, i - 1, i - 1, i - 1,
                                           i, i, i, i, i,
@@ -133,11 +168,11 @@ def transform_dict_for_nn(x_dict, y_dict, n_input):
                                           i + 1, i + 1, i + 1, i + 1, i + 1,
                                           i + 2, i + 2, i + 2, i + 2, i + 2])
                     # y index
-                    if j == (y_size - 2):
+                    if j == (y_size - 2):       # need to check if it is corner
                         y_ind = np.array([j - 2, j - 1, j, j + 1, 0,
                                           j - 2, j - 1, j, j + 1, 0,
                                           j - 2, j - 1, j, j + 1, 0])
-                    elif j == (y_size - 1):
+                    elif j == (y_size - 1):     # need to check if it is corner
                         y_ind = np.array([j - 2, j - 1, j, 0, 1,
                                           j - 2, j - 1, j, 0, 1,
                                           j - 2, j - 1, j, 0, 1])
@@ -148,11 +183,11 @@ def transform_dict_for_nn(x_dict, y_dict, n_input):
 
                 # stencil 3*3
                 else:
-                    if i == (x_size - 1):
+                    if i == (x_size - 1):       # need to check if it is corner
                         x_ind = np.array([i - 1, i - 1, i - 1, i, i, i, 0, 0, 0])
                     else:
                         x_ind = np.array([i - 1, i - 1, i - 1, i, i, i, i + 1, i + 1, i + 1])
-                    if j == (y_size - 1):
+                    if j == (y_size - 1):       # need to check if it is corner
                         y_ind = np.array([j - 1, j, 0, j - 1, j, 0, j - 1, j, 0])
                     else:
                         y_ind = np.array([j - 1, j, j + 1, j - 1, j, j + 1, j - 1, j, j + 1])
@@ -161,7 +196,7 @@ def transform_dict_for_nn(x_dict, y_dict, n_input):
 
                 if n_input == 9:
                     x[:, ind] = x_dict[keys[key_i]][x_ind, y_ind]
-                elif n_input == 27:
+                elif n_input == 27:     # if 27 input parameters, combine 3*9 values
                     x[:, ind] = np.hstack((x_dict[keys[key_i]][x_ind, y_ind],
                                            x_dict[keys[key_i-1]][x_ind, y_ind],
                                            x_dict[keys[key_i+1]][x_ind, y_ind]))
@@ -172,6 +207,12 @@ def transform_dict_for_nn(x_dict, y_dict, n_input):
 
 
 def untransform_y(y, shape):
+    """ Trunsform array of form [shape[0]*shape[1]*3] (in our case [256*256*3])
+    back into dictionary of 'u', 'v' and 'w' with arrays of form shape ((256, 256)).
+    :param y: array of form [256*256*3]
+    :param shape: shape of array in output dictionary ((256, 256))
+    :return: dictionary of 'u', 'v' and 'w' with arrays of form shape
+    """
 
     keys = ['u', 'v', 'w']
     n = shape[0]*shape[1]

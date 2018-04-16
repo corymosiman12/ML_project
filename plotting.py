@@ -80,7 +80,12 @@ def spectra(folder, fname, ind):
     fig = plt.figure(figsize=(4, 3))
     ax = plt.gca()
     files = ['predicted'+ind+'.spectra', 'filtered'+ind+'.spectra', 'true'+ind+'.spectra']
-    labels = ['predicted', 'filtered','true']
+    if ind == '':
+        files = ['fine_grid.spectra', 'coarse_grid.spectra', 'filtered.spectra']
+        labels = ['fine grid', 'coarse grid', 'filtered']
+    else:
+        files = ['predicted' + ind + '.spectra', 'filtered' + ind + '.spectra', 'true' + ind + '.spectra']
+        labels = ['predicted', 'filtered', 'true']
 
     for k in range(len(files)):
         f = open(folder+files[k], 'r')

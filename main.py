@@ -13,6 +13,8 @@ import nn_functions as nnf
 # import 
 
 plot_folder = './plots/'
+Npoints_coarse2D = 256
+Npoints_coarse3D = 64
 
 def main():
 
@@ -22,36 +24,42 @@ def main():
     logging.info('numpy {}'.format(np.__version__))
     logging.info('64 bit {}\n'.format(sys.maxsize > 2 ** 32))
 
-    # Load in velocity data
+    # Load in 2D velocity data
     velocity = data.load_data()
     # data.example_of_data(velocity)
     # form testing and training sets for velocity data
     X_train, y_train, X_test, y_test = data.form_train_test_sets(velocity)
+
+    # # Load in 3D velocity data
+    # velocity = data.load_data(dimension=3)
+    # data.example_of_data(velocity)
+    # # form testing and training sets for velocity data
+    # X_train, y_train, X_test, y_test = data.form_train_test_sets(velocity, Npoints_coarse3D)
 
     ########################## OLGA START ##########################
     # logging.info('NN is Extreme learning machine (algorithm from the paper)\n')
     # y_predict = elm.extreme_learning_machine(X_train, y_train, X_test, y_test)
     # plotting.plot_velocities_and_spectra(X_test, y_test, y_predict, plot_folder)
 
-    logging.info('Compare trasform functions')
-    x1, y1 = utils.transform_dict_for_nn(X_train, y_train, 9)
-    x2 = cf.form_features(X_train)['u']
-    y2 = cf.my_reshaper(y_train)['u']
-    print(x1.shape, x2.shape, y1.shape, y2.shape)
-
-    x1 = x1[:, :256*256].T
-    y1 = y1[:256*256].reshape(256*256, 1)
-
-    print(x1.shape, x2.shape, y1.shape, y2.shape)
-    print(False in np.equal(y1, y2))
-    print(False in np.equal(x1, x2))
-
-    ind = np.where(x1 != x2)
-    print(ind)
-    print(x1[ind])
-    print(x2[ind])
-    # value which supposed to be
-    print(X_train['u'][-1, 0], X_train['u'][-1, 1])
+    # logging.info('Compare trasform functions')
+    # x1, y1 = utils.transform_dict_for_nn(X_train, y_train, 9)
+    # x2 = cf.form_features(X_train)['u']
+    # y2 = cf.my_reshaper(y_train)['u']
+    # print(x1.shape, x2.shape, y1.shape, y2.shape)
+    #
+    # x1 = x1[:, :256*256].T
+    # y1 = y1[:256*256].reshape(256*256, 1)
+    #
+    # print(x1.shape, x2.shape, y1.shape, y2.shape)
+    # print(False in np.equal(y1, y2))
+    # print(False in np.equal(x1, x2))
+    #
+    # ind = np.where(x1 != x2)
+    # print(ind)
+    # print(x1[ind])
+    # print(x2[ind])
+    # # value which supposed to be
+    # print(X_train['u'][-1, 0], X_train['u'][-1, 1])
 
 
     ########################## OLGA END ##########################

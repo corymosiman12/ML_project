@@ -74,9 +74,6 @@ def sparse_dict(data_dict, n_coarse_points, start):
     sparse = dict()
     for key, value in data_dict.items():
         sparse[key] = sparse_array(value, n_coarse_points, start)
-<<<<<<< Updated upstream
-    return sparse
-=======
     return sparse
 
 
@@ -242,4 +239,3 @@ def final_transform(X, y, n_features, train=False, index=False):
         y_test = [y_test_0, y_test_1, y_test_2]
 
         return (X_test, y_test)
->>>>>>> Stashed changes

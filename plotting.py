@@ -5,12 +5,9 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import gc
 import glob
-<<<<<<< Updated upstream
-=======
 import logging
 import utils
 import os
->>>>>>> Stashed changes
 
 
 
@@ -78,25 +75,28 @@ def imagesc(Arrays, titles, name=None):
     plt.close()
 
 
-def spectra(folder, fname):
+def spectra(folder, fname, ind):
 
+    ind = str(ind)
     fig = plt.figure(figsize=(6, 5))
     ax = plt.gca()
     files = glob.glob(folder + '*.spectra')
-    labels = ['filtered', 'fine', 'coarse']
+    files = ['predicted'+ind+'.spectra', 'filtered'+ind+'.spectra', 'true'+ind+'.spectra']
+    if ind == '':
+        files = ['fine_grid.spectra', 'coarse_grid.spectra', 'filtered.spectra']
+        labels = ['fine grid', 'coarse grid', 'filtered']
+    else:
+        files = ['predicted' + ind + '.spectra', 'filtered' + ind + '.spectra', 'true' + ind + '.spectra']
+        labels = ['predicted', 'filtered', 'true']
 
     for k in range(len(files)):
-<<<<<<< Updated upstream
-        f = open(files[k], 'r')
-=======
         f = open(os.path.join(folder, files[k]), 'r')
->>>>>>> Stashed changes
         data = np.array(f.readlines()).astype(np.float)
         x = np.arange(len(data))
         ax.loglog(x, data, '-', linewidth=2, label=labels[k])
 
     y = 1e9 * np.power(x[1:], -5./3)
-    ax.loglog(x[1:], y, 'r--', label=r'$-5/3$ slope')
+    # ax.loglog(x[1:], y, 'r--', label=r'$-5/3$ slope')
     ax.set_title('Spectra')
     ax.set_ylabel(r'$E$')
     ax.set_xlabel(r'k')
@@ -107,8 +107,6 @@ def spectra(folder, fname):
     fig.savefig(fname)
     plt.close('all')
 
-<<<<<<< Updated upstream
-=======
 
 def plot_velocities_and_spectra(x_test, y_test, y_predict, plot_folder):
     logging.info('Plot predicted velocities')
@@ -143,4 +141,3 @@ def plot_velocities_and_spectra(x_test, y_test, y_predict, plot_folder):
 
         spectra(plot_folder, os.path.join(plot_folder, 'spectra{}'.format(str(test_example))), test_example)
 
->>>>>>> Stashed changes

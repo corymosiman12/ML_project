@@ -62,14 +62,6 @@ class my_keras():
         plt.savefig(plot_folder)
 
     def evaluate_test_sets(self, X_test_list, y_test_list):
-<<<<<<< Updated upstream
-        for test_set in range(len(X_test_list)):
-            prediction = self.estimator.predict(X_test_list[test_set]['u'])
-            error = mean_squared_error(y_test_list[test_set]['u'], prediction)
-            self.predictions.append(prediction)
-            self.mse.append(error)
-        self.plot_mse()
-=======
         for sigma in range(len(X_test_list)):
             predict_dict = {}
             mse_dict = {}
@@ -82,7 +74,6 @@ class my_keras():
             self.predictions.append(predict_dict)
             self.mse.append(mse_dict)
         # self.plot_mse()
->>>>>>> Stashed changes
 
     def plot_mse(self):
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10,5))

@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
@@ -14,9 +15,10 @@ from sklearn.pipeline import Pipeline
 import matplotlib.pylab as plt
 
 class my_keras():
-    def __init__(self, num_epochs, num_neurons):
+    def __init__(self, num_epochs, num_neurons, num_inputs):
         self.epochs = num_epochs
         self.num_neurons = num_neurons
+        self.num_inputs = num_inputs
         self.predictions = []
         self.mse = []
 
@@ -24,7 +26,7 @@ class my_keras():
     def baseline_model(self):
         # create model
         model = Sequential()
-        model.add(Dense(self.num_neurons, input_shape=(9,), kernel_initializer='normal', activation='relu'))
+        model.add(Dense(self.num_neurons, input_shape=(self.num_inputs,), kernel_initializer='normal', activation='relu'))
         model.add(Dense(1, kernel_initializer='normal'))
 
         # compile model
@@ -33,21 +35,21 @@ class my_keras():
         self.model = model
         return self.model
 
-    def evaluate_model(self, X_train, y_train, X_validation, y_validation):
+    def evaluate_model(self, X_train, y_train, X_validation, y_validation, plot_folder):
     # def evaluate_model(self, X_train, y_train):
         seed = 12
         seed = np.random.seed(seed)
-        shp = X_train.shape
+        # shp = X_train.shape
 
-        logging.info('X_train shape: {}'.format(X_train.shape))
+        # logging.info('X_train shape: {}'.format(X_train.shape))
 
         # Keras requirese to pass blank function to `build_fn`
         self.estimator = KerasRegressor(build_fn=self.baseline_model, epochs=self.epochs, batch_size=64, verbose=2)
         self.estimator_trained = self.estimator.fit(X_train, y_train, validation_data = (X_validation, y_validation))
-        logging.info("Train loss: {} Val loss: {}".format(self.estimator_trained.history['loss'], self.estimator_trained.history['val_loss']))
-        self.plot_loss_per_epoch()
+        # logging.info("Train loss: {} Val loss: {}".format(self.estimator_trained.history['loss'], self.estimator_trained.history['val_loss']))
+        self.plot_loss_per_epoch(plot_folder)
 
-    def plot_loss_per_epoch(self):
+    def plot_loss_per_epoch(self, plot_folder):
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10,5))
         ax.plot(range(1,self.epochs+1), self.estimator_trained.history['loss'], color="steelblue", marker="o", label="training")
         ax.plot(range(1,self.epochs+1), self.estimator_trained.history['val_loss'], color="green", marker="o", label="validation")
@@ -56,20 +58,36 @@ class my_keras():
         plt.xticks(range(1,self.epochs+2,2))
         ax.set_xlabel("epoch", fontsize=16)
         ax.set_ylabel("loss", fontsize=16)
-        plt.savefig('plots/' + datetime.now().strftime('%Y-%m-%d %H_%M') + '_loss_per_epoch.png')
+        plot_folder = os.path.join(plot_folder, datetime.now().strftime('%Y-%m-%d %H_%M') + '_loss_per_epoch.png')
+        plt.savefig(plot_folder)
 
     def evaluate_test_sets(self, X_test_list, y_test_list):
+<<<<<<< Updated upstream
         for test_set in range(len(X_test_list)):
             prediction = self.estimator.predict(X_test_list[test_set]['u'])
             error = mean_squared_error(y_test_list[test_set]['u'], prediction)
             self.predictions.append(prediction)
             self.mse.append(error)
         self.plot_mse()
+=======
+        for sigma in range(len(X_test_list)):
+            predict_dict = {}
+            mse_dict = {}
+            for key, value in X_test_list[sigma].items():
+                prediction = self.estimator.predict(X_test_list[sigma][key])
+                # print(type(prediction), prediction.shape)
+                error = mean_squared_error(y_test_list[sigma][key], prediction)
+                predict_dict[key] = prediction.reshape(-1,256)
+                mse_dict[key] = error
+            self.predictions.append(predict_dict)
+            self.mse.append(mse_dict)
+        # self.plot_mse()
+>>>>>>> Stashed changes
 
     def plot_mse(self):
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10,5))
-        sigma = [1, 0.9, 1.1]
-        labels = [r'$\sigma = 1$', r'$\sigma = 0.9$', r'$\sigma = 1.1$']
+        sigma = [1, 1.1, 0.9]
+        labels = [r'$\sigma = 1$', r'$\sigma = 1.1$', r'$\sigma = 0.9$']
         colors = ['steelblue','green','black']
         for mse in range(len(self.mse)):
             ax.scatter(sigma[mse], self.mse[mse], color=colors[mse], marker="o", label=labels[mse])

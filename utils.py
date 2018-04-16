@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 from numpy.fft import fftfreq, fft2, fftn
 import logging
@@ -134,6 +135,7 @@ def transform_dict_for_nn(x_dict, y_dict, n_input):
     :param n_input: number of input parameters 9, 27 or 25(5*5 stencil)
     :return: (x, y) where x is array of form [n_input, 256*256*3] and y is array of form [256*256*3]
     """
+
     n = x_dict['u'].size   # 256^3 = 16777216
     y = np.empty(3 * n)
     x_size = x_dict['u'].shape[0]
@@ -224,3 +226,79 @@ def untransform_y(y, shape):
         j = (ind % n) % shape[0]
         y_dict[keys[k]][i, j] = y[ind]
     return y_dict
+
+def final_transform(X, y, n_features, train=False, index=False):
+    """
+    To get values by index: [begin_index:end_index]
+        u: [:256*256]
+        v: [256*256:256*256*2]
+        w: [256*256*2:]
+    """
+    i = 256*256
+    if train:
+        """
+        transform_dict_for_nn() returns:
+            1. array with shape = (n_inputs, 256*256*3)
+            2. vector with shape = (256*256*3, )
+        tr = transformed
+        """
+        X, y = transform_dict_for_nn(X, y, n_features)
+        if index.lower() == 'u':
+            X = X[:, :i].T
+            y = y[:i].reshape(i, 1)
+            return (X, y)
+        elif index.lower() == 'v':
+            X = X[:, i:i*2].T
+            y = y[i:i*2].reshape(i, 1)
+            return (X, y)
+        elif index.lower() == 'w':
+            X = X[:, i*2:].T
+            y = y[i*2:].reshape(i, 1)
+            return (X, y)
+        else:
+            logging.fatal('Invalid index to train on. Enter "u", "v", "w"')
+            sys.exit()
+    else:
+        """
+        X_test_0_tr, y_test_0_tr: sigma = 1 filtered 
+        X_text_1_tr, y_test_1_tr: sigma = 1.1 filtered
+        X_test_2_tr, y_test_2_tr: sigma = 0.9 filtered
+        """
+        X_test_0_tr, y_test_0_tr = transform_dict_for_nn(X[0], y[0], n_features)
+        X_test_1_tr, y_test_1_tr = transform_dict_for_nn(X[1], y[1], n_features)
+        X_test_2_tr, y_test_2_tr = transform_dict_for_nn(X[2], y[2], n_features)
+
+        X_test_0_u = X_test_0_tr[:, :i].T
+        y_test_0_u = y_test_0_tr[:i].reshape(i, 1)
+        X_test_0_v = X_test_0_tr[:, i:i*2].T
+        y_test_0_v = y_test_0_tr[i:i*2].reshape(i, 1)
+        X_test_0_w = X_test_0_tr[:, i*2:].T
+        y_test_0_w = y_test_0_tr[i*2:].reshape(i, 1)
+
+        X_test_0 = {'u': X_test_0_u, 'v': X_test_0_v, 'w': X_test_0_w}
+        y_test_0 = {'u': y_test_0_u,'v': y_test_0_v,'w': y_test_0_w}
+        
+        X_test_1_u = X_test_1_tr[:, :i].T
+        y_test_1_u = y_test_1_tr[:i].reshape(i, 1)
+        X_test_1_v = X_test_1_tr[:, i:i*2].T
+        y_test_1_v = y_test_1_tr[i:i*2].reshape(i, 1)
+        X_test_1_w = X_test_1_tr[:, i*2:].T
+        y_test_1_w = y_test_1_tr[i*2:].reshape(i, 1)
+
+        X_test_1 = {'u': X_test_1_u,'v': X_test_1_v,'w': X_test_1_w}
+        y_test_1 = {'u': y_test_1_u,'v': y_test_1_v,'w': y_test_1_w}
+
+        X_test_2_u = X_test_2_tr[:, :i].T
+        y_test_2_u = y_test_2_tr[:i].reshape(i, 1)
+        X_test_2_v = X_test_2_tr[:, i:i*2].T
+        y_test_2_v = y_test_2_tr[i:i*2].reshape(i, 1)
+        X_test_2_w = X_test_2_tr[:, i*2:].T
+        y_test_2_w = y_test_2_tr[i*2:].reshape(i, 1)
+
+        X_test_2 = {'u': X_test_2_u,'v': X_test_2_v,'w': X_test_2_w}
+        y_test_2 = {'u': y_test_2_u,'v': y_test_2_v,'w': y_test_2_w}
+
+        X_test = [X_test_0, X_test_1, X_test_2]
+        y_test = [y_test_0, y_test_1, y_test_2]
+
+        return (X_test, y_test)

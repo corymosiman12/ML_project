@@ -128,44 +128,13 @@ def plot_velocities_and_spectra(x_test, y_test, y_predict, plot_folder):
                 os.path.join(plot_folder, 'w_{}'.format(str(test_example))))
 
         logging.info('Calculate ang plot spectra')
-        utils.spectral_density([y_test[test_example]['u'], y_test[test_example]['v'], y_test[test_example]['w']],
-                               [2 * np.pi / 256, 2 * np.pi / 256], [256, 256], 
+        utils.spectral_density(y_test[test_example],
                                os.path.join(plot_folder, 'true{}'.format(str(test_example))))
-        utils.spectral_density([x_test[test_example]['u'], x_test[test_example]['v'], x_test[test_example]['w']],
-                               [2 * np.pi / 256, 2 * np.pi / 256], [256, 256],
+        utils.spectral_density(x_test[test_example],
                                os.path.join(plot_folder, 'filtered{}'.format(str(test_example))))
-        utils.spectral_density(
-            [y_predict[test_example]['u'], y_predict[test_example]['v'], y_predict[test_example]['w']],
-            [2 * np.pi / 256, 2 * np.pi / 256], [256, 256],
-            os.path.join(plot_folder, 'predicted{}'.format(str(test_example))))
+        utils.spectral_density(y_predict[test_example],
+                                os.path.join(plot_folder, 'predicted{}'.format(str(test_example))))
 
         spectra(plot_folder, os.path.join(plot_folder, 'spectra{}'.format(str(test_example))), test_example)
 
-
-# def plot_velocities_and_spectra(x_test, y_test, y_predict, plot_folder):
-#     logging.info('Plot predicted velocities')
-#     for test_example in range(3):
-#         imagesc([y_test[test_example]['u'][0:32, 0:32],
-#                  x_test[test_example]['u'][0:32, 0:32],
-#                  y_predict[test_example]['u'][0:32, 0:32]],
-#                 [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], plot_folder + 'u_' + str(test_example))
-#         imagesc([y_test[test_example]['v'][0:32, 0:32],
-#                  x_test[test_example]['v'][0:32, 0:32],
-#                  y_predict[test_example]['v'][0:32, 0:32]],
-#                 [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], plot_folder + 'v_' + str(test_example))
-#         imagesc([y_test[test_example]['w'][0:32, 0:32],
-#                  x_test[test_example]['w'][0:32, 0:32],
-#                  y_predict[test_example]['w'][0:32, 0:32]],
-#                 [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], plot_folder + 'w_' + str(test_example))
-
-#         logging.info('Calculate ang plot spectra')
-#         utils.spectral_density([y_test[test_example]['u'], y_test[test_example]['v'], y_test[test_example]['w']],
-#                                [2 * np.pi / 256, 2 * np.pi / 256], [256, 256], plot_folder + 'true' + str(test_example))
-#         utils.spectral_density([x_test[test_example]['u'], x_test[test_example]['v'], x_test[test_example]['w']],
-#                                [2 * np.pi / 256, 2 * np.pi / 256], [256, 256],
-#                                plot_folder + 'filtered' + str(test_example))
-#         utils.spectral_density(
-#             [y_predict[test_example]['u'], y_predict[test_example]['v'], y_predict[test_example]['w']],
-#             [2 * np.pi / 256, 2 * np.pi / 256], [256, 256], plot_folder + 'predicted' + str(test_example))
-#         spectra(plot_folder, plot_folder + 'spectra' + str(test_example), test_example)
 

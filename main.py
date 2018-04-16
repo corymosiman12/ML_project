@@ -61,28 +61,7 @@ def main():
     # # form testing and training sets for velocity data
     # X_train, y_train, X_test, y_test = data.form_train_test_sets(velocity, Npoints_coarse3D)
 
-    ########################## OLGA START ##########################
-    # logging.info('NN is Extreme learning machine (algorithm from the paper)\n')
-    # y_predict = elm.extreme_learning_machine(X_train, y_train, X_test, y_test)
-    # plotting.plot_velocities_and_spectra(X_test, y_test, y_predict, plot_folder)
 
-    # logging.info('Compare trasform functions')
-    # x1, y1 = utils.transform_dict_for_nn(X_train, y_train, 9)
-    # x2 = cf.form_features(X_train)['u']
-    # y2 = cf.my_reshaper(y_train)['u']
-    # print(x1.shape, x2.shape, y1.shape, y2.shape)
-    #
-    # x1 = x1[:, :256*256].T
-    # y1 = y1[:256*256].reshape(256*256, 1)
-    #
-    # print(x1.shape, x2.shape, y1.shape, y2.shape)
-    # print(False in np.equal(y1, y2))
-    # print(False in np.equal(x1, x2))
-    #
-    y_train_reshaped = cf.my_reshaper(y_train)
-    y_test_reshaped = cf.my_reshaper(y_test)
-    logging.info("X_train_enc['u'] shape: {}".format(X_train_enc['u'].shape))
-    logging.info("y_train_reshaped['u'] shape: {}\n".format(y_train_reshaped['u'].shape))
     ########################## OLGA START ##########################
     # logging.info('NN is Extreme learning machine (algorithm from the paper)\n')
     # y_predict = elm.extreme_learning_machine(X_train, y_train, X_test, y_test)

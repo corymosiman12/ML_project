@@ -79,14 +79,8 @@ def imagesc(Arrays, titles, name=None):
 def spectra(folder, fname, ind):
 
     ind = str(ind)
-<<<<<<< HEAD
     fig = plt.figure(figsize=(4, 3))
     ax = plt.gca()
-=======
-    fig = plt.figure(figsize=(6, 5))
-    ax = plt.gca()
-    files = glob.glob(folder + '*.spectra')
->>>>>>> cory_branch
     files = ['predicted'+ind+'.spectra', 'filtered'+ind+'.spectra', 'true'+ind+'.spectra']
     if ind == '':
         files = ['fine_grid.spectra', 'coarse_grid.spectra', 'filtered.spectra']

@@ -81,7 +81,6 @@ def spectra(folder, fname, ind):
     ind = str(ind)
     fig = plt.figure(figsize=(4, 3))
     ax = plt.gca()
-    files = ['predicted'+ind+'.spectra', 'filtered'+ind+'.spectra', 'true'+ind+'.spectra']
     if ind == '':
         files = ['fine_grid.spectra', 'coarse_grid.spectra', 'filtered.spectra']
         labels = ['fine grid', 'coarse grid', 'filtered']
@@ -95,17 +94,61 @@ def spectra(folder, fname, ind):
         x = np.arange(len(data))
         ax.loglog(x, data, '-', linewidth=2, label=labels[k])
 
-    y = 1e9 * np.power(x[1:], -5./3)
+    # y = 1e9 * np.power(x[1:], -5./3)
     # ax.loglog(x[1:], y, 'r--', label=r'$-5/3$ slope')
     ax.set_title('Spectra')
     ax.set_ylabel(r'$E$')
     ax.set_xlabel(r'k')
-    ax.axis(ymin=1e2)
+    # ax.axis(ymin=1e2)
     plt.legend(loc=0)
 
     fig.subplots_adjust(left=0.16, right=0.95, bottom=0.2, top=0.87)
     fig.savefig(fname)
     plt.close('all')
+
+
+def plot_vorticity_pdf(x_test, y_test, y_predict, plot_folder):
+    """ Plot normalized vorticity pdf."""
+    shape = y_predict[0]['u'].shape
+
+    if len(shape) == 2:
+        dx = np.divide([np.pi, np.pi], np.array(shape))
+
+        logging.info('Plot vorticity pdf')
+        for test_example in range(3):
+
+            fig = plt.figure(figsize=(4, 3))
+            ax = plt.gca()
+            _, du_dy = np.gradient(y_test[test_example]['u'], dx[0], dx[1])
+            dv_dx, _ = np.gradient(y_test[test_example]['v'], dx[0], dx[1])
+            vorticity = dv_dx - du_dy
+            vorticity /= np.max(np.abs(vorticity))
+            x, y = utils.pdf_from_array_with_x(vorticity, bins=100, range=[-1, 1])
+            ax.semilogy(x, y, label='true')
+
+            _, du_dy = np.gradient(x_test[test_example]['u'], dx[0], dx[1])
+            dv_dx, _ = np.gradient(x_test[test_example]['v'], dx[0], dx[1])
+            vorticity = dv_dx - du_dy
+            vorticity /= np.max(np.abs(vorticity))
+            x, y = utils.pdf_from_array_with_x(vorticity, bins=100, range=[-1, 1])
+            ax.semilogy(x, y, label='filtered')
+
+            _, du_dy = np.gradient(y_predict[test_example]['u'], dx[0], dx[1])
+            dv_dx, _ = np.gradient(y_predict[test_example]['v'], dx[0], dx[1])
+            vorticity = dv_dx - du_dy
+            vorticity /= np.max(np.abs(vorticity))
+            x, y = utils.pdf_from_array_with_x(vorticity, bins=100, range=[-1, 1])
+            ax.semilogy(x, y, label='predicted')
+
+            ax.set_title('Vorticity pdf')
+            ax.set_ylabel('pdf')
+            ax.set_xlabel(r'$\omega$')
+            ax.axis(ymin=1e-3)
+            plt.legend(loc=0)
+
+            fig.subplots_adjust(left=0.16, right=0.95, bottom=0.2, top=0.87)
+            fig.savefig(plot_folder + 'omega_{}'.format(test_example))
+            plt.close('all')
 
 
 def plot_velocities_and_spectra(x_test, y_test, y_predict, plot_folder):
@@ -115,26 +158,26 @@ def plot_velocities_and_spectra(x_test, y_test, y_predict, plot_folder):
                  x_test[test_example]['u'][0:32, 0:32],
                  y_predict[test_example]['u'][0:32, 0:32]],
                 [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], 
-                os.path.join(plot_folder, 'u_{}'.format(str(test_example))))
+                os.path.join(plot_folder, 'u_{}'.format(test_example)))
         imagesc([y_test[test_example]['v'][0:32, 0:32],
                  x_test[test_example]['v'][0:32, 0:32],
                  y_predict[test_example]['v'][0:32, 0:32]],
                 [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], 
-                os.path.join(plot_folder, 'v_{}'.format(str(test_example))))
+                os.path.join(plot_folder, 'v_{}'.format(test_example)))
         imagesc([y_test[test_example]['w'][0:32, 0:32],
                  x_test[test_example]['w'][0:32, 0:32],
                  y_predict[test_example]['w'][0:32, 0:32]],
                 [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], 
-                os.path.join(plot_folder, 'w_{}'.format(str(test_example))))
+                os.path.join(plot_folder, 'w_{}'.format(test_example)))
 
         logging.info('Calculate ang plot spectra')
         utils.spectral_density(y_test[test_example],
-                               os.path.join(plot_folder, 'true{}'.format(str(test_example))))
+                               os.path.join(plot_folder, 'true{}'.format(test_example)))
         utils.spectral_density(x_test[test_example],
-                               os.path.join(plot_folder, 'filtered{}'.format(str(test_example))))
+                               os.path.join(plot_folder, 'filtered{}'.format(test_example)))
         utils.spectral_density(y_predict[test_example],
-                                os.path.join(plot_folder, 'predicted{}'.format(str(test_example))))
+                                os.path.join(plot_folder, 'predicted{}'.format(test_example)))
 
-        spectra(plot_folder, os.path.join(plot_folder, 'spectra{}'.format(str(test_example))), test_example)
+        spectra(plot_folder, os.path.join(plot_folder, 'spectra{}'.format(test_example)), test_example)
 
 

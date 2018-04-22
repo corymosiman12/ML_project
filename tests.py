@@ -16,7 +16,7 @@ class TestTransform(unittest.TestCase):
         for key, value in self.y_train.items():
             self.X_train[key] = ndimage.gaussian_filter(value, sigma=1, mode='wrap', truncate=500)
 
-    def test_transform_simple(self):
+    def test_compare_transform(self):
         """
 
         """
@@ -29,7 +29,14 @@ class TestTransform(unittest.TestCase):
         self.assertTrue(np.allclose(y1, y2, rtol=1e-08, atol=1e-12))
         self.assertTrue(np.allclose(x1, x2, rtol=1e-08, atol=1e-12))
 
+    def test_transform_y(self):
+        for n in [9, 27, 25]:
+            x, y = utils.transform_dict_for_nn(self.X_train, self.y_train, n)
+            y_train_new = utils.untransform_y(y, self.y_train['u'].shape)
+            for key, value in self.y_train.items():
+                self.assertTrue(np.allclose(self.y_train[key], y_train_new[key], rtol=1e-08, atol=1e-12))
 
-runner = unittest.TextTestRunner(verbosity=2).run(TestTransform("test_transform_simple"))
 
+runner = unittest.TextTestRunner(verbosity=2).run(TestTransform("test_compare_transform"))
+runner = unittest.TextTestRunner(verbosity=2).run(TestTransform("test_transform_y"))
 

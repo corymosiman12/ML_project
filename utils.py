@@ -3,10 +3,17 @@ import numpy as np
 from numpy.fft import fftfreq, fft2, fftn
 import logging
 
+
 def timer(start, end, label):
     hours, rem = divmod(end - start, 3600)
     minutes, seconds = divmod(rem, 60)
     logging.info("{:0>2}:{:05.2f} \t {}".format(int(minutes), seconds, label))
+
+
+def pdf_from_array_with_x(array, bins, range):
+    pdf, edges = np.histogram(array, bins=bins, range=range, normed=1)
+    x = (edges[1:] + edges[:-1]) / 2
+    return x, pdf
 
 
 def shell_average(spect, N_points, k):
@@ -226,6 +233,7 @@ def untransform_y(y, shape):
         j = (ind % n) % shape[0]
         y_dict[keys[k]][i, j] = y[ind]
     return y_dict
+
 
 def final_transform(X, y, n_features, train=False, index=False):
     """

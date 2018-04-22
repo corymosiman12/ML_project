@@ -133,7 +133,6 @@ def sparse_dict(data_dict, n_coarse_points, start):
     return sparse
 
 
-
 def transform_dict_for_nn(x_dict, y_dict, n_input):
     """ Transform dictionary of 'u', 'v', 'w' into array of form [n_input, 256*256*3]
     (combining all 3 velocities in 1 array)
@@ -143,7 +142,7 @@ def transform_dict_for_nn(x_dict, y_dict, n_input):
     :return: (x, y) where x is array of form [n_input, 256*256*3] and y is array of form [256*256*3]
     """
 
-    n = x_dict['u'].size   # 256^3 = 16777216
+    n = x_dict['u'].size   # 256^2
     y = np.empty(3 * n)
     x_size = x_dict['u'].shape[0]
     y_size = x_dict['u'].shape[1]
@@ -201,7 +200,7 @@ def transform_dict_for_nn(x_dict, y_dict, n_input):
                     else:
                         y_ind = np.array([j - 1, j, j + 1, j - 1, j, j + 1, j - 1, j, j + 1])
 
-                ind = count * n + i * x_size + j
+                ind = count * n + i * y_size + j
 
                 if n_input == 9:
                     x[:, ind] = x_dict[keys[key_i]][x_ind, y_ind]
@@ -210,6 +209,50 @@ def transform_dict_for_nn(x_dict, y_dict, n_input):
                                            x_dict[keys[key_i-1]][x_ind, y_ind],
                                            x_dict[keys[key_i+1]][x_ind, y_ind]))
                 y[ind] = y_dict[keys[key_i]][i, j]
+        count += 1
+
+    return x, y
+
+
+def transform_dict_for_nn_3D(x_dict, y_dict, n_input):
+    """ Transform dictionary of 'u', 'v', 'w' into array of form [n_input, 64*64*64*3]
+    (combining all 3 velocities in 1 array)
+    :param x_dict: dictionary with ['u'], ['v'], ['w'] of training data (filtered velocity)
+    :param y_dict: dictionary with ['u'], ['v'], ['w'] of true data
+    :param n_input: number of input parameters 9, 27 or 25(5*5 stencil)
+    :return: (x, y) where x is array of form [n_input, 256*256*3] and y is array of form [256*256*3]
+    """
+
+    n = x_dict['u'].size   # 64^3 = 16777216
+    y = np.empty(3 * n)
+    size = x_dict['u'].shape
+    logging.info('Use {} inputs'.format(n_input))
+    x = np.empty((n_input, 3 * n))  # 27 x number of examples (64^3)*number of velocity components
+    keys = ['w', 'u', 'v', 'w', 'u']
+
+    count = 0
+    for key_i in range(1, 4):  # for each velocity u, v, w
+        for i in range(size[0]):
+            for j in range(size[1]):
+                for k in range(size[2]):
+                # stencil 3*3*3
+                    if i == (size[0] - 1):       # need to check if it is corner
+                        x_ind = np.array([i - 1, i - 1, i - 1, i, i, i, 0, 0, 0]*3)
+                    else:
+                        x_ind = np.array([i - 1, i - 1, i - 1, i, i, i, i + 1, i + 1, i + 1]*3)
+                    if j == (size[1] - 1):       # need to check if it is corner
+                        y_ind = np.array([j - 1, j, 0, j - 1, j, 0, j - 1, j, 0]*3)
+                    else:
+                        y_ind = np.array([j - 1, j, j + 1, j - 1, j, j + 1, j - 1, j, j + 1]*3)
+                    if k == (size[2] - 1):       # need to check if it is corner
+                        z_ind = np.hstack((np.array([k - 1]*9), np.array([k]*9), np.array([0]*9)))
+                    else:
+                        z_ind = np.hstack((np.array([k - 1]*9), np.array([k]*9), np.array([k + 1]*9)))
+
+                    ind = count * n + i * size[1]*size[2] + j * size[2] + k
+
+                    x[:, ind] = x_dict[keys[key_i]][x_ind, y_ind, z_ind]
+                    y[ind] = y_dict[keys[key_i]][i, j, k]
         count += 1
 
     return x, y
@@ -228,10 +271,31 @@ def untransform_y(y, shape):
     y_dict = dict({'u': np.empty(shape), 'v': np.empty(shape), 'w': np.empty(shape)})
 
     for ind in range(len(y)):
-        k = ind // n
-        i = (ind % n) // shape[0]
-        j = (ind % n) % shape[0]
+        k = ind // n                        # velocity index
+        i = (ind % n) // shape[1]           # x inxex
+        j = (ind % n) % shape[1]            # y inxex
         y_dict[keys[k]][i, j] = y[ind]
+    return y_dict
+
+
+def untransform_y_3D(y, shape):
+    """ Trunsform array of form [shape[0]*shape[1]*shape[2]*3] (in our case [64*64*64*3])
+    back into dictionary of 'u', 'v' and 'w' with arrays of form shape ((64, 64, 64)).
+    :param y: array of form [64*64*64*3]
+    :param shape: shape of array in output dictionary ((64, 64, 64))
+    :return: dictionary of 'u', 'v' and 'w' with arrays of form shape
+    """
+
+    keys = ['u', 'v', 'w']
+    n = shape[0]*shape[1]*shape[2]
+    y_dict = dict({'u': np.empty(shape), 'v': np.empty(shape), 'w': np.empty(shape)})
+
+    for ind in range(len(y)):
+        v_ind = ind // n                                      # velocity index
+        i = (ind % n) // (shape[1] * shape[2])                # x inxex
+        j = (ind % n) % (shape[1] * shape[2]) // shape[2]     # y index
+        k = (ind % n) % (shape[1] * shape[2]) % shape[2]      # z index
+        y_dict[keys[v_ind]][i, j, k] = y[ind]
     return y_dict
 
 

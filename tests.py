@@ -16,6 +16,12 @@ class TestTransform(unittest.TestCase):
         for key, value in self.y_train.items():
             self.X_train[key] = ndimage.gaussian_filter(value, sigma=1, mode='wrap', truncate=500)
 
+        velocity = data.load_data(dimension=3)
+        self.y_train_3d = utils.sparse_dict(velocity, 64, 0)
+        self.X_train_3d = dict()
+        for key, value in self.y_train_3d.items():
+            self.X_train_3d[key] = ndimage.gaussian_filter(value, sigma=1, mode='wrap', truncate=500)
+
     def test_compare_transform(self):
         """
 
@@ -36,7 +42,13 @@ class TestTransform(unittest.TestCase):
             for key, value in self.y_train.items():
                 self.assertTrue(np.allclose(self.y_train[key], y_train_new[key], rtol=1e-08, atol=1e-12))
 
+    def test_transform_y_3D(self):
+        x, y = utils.transform_dict_for_nn_3D(self.X_train_3d, self.y_train_3d, 27)
+        y_train_new = utils.untransform_y_3D(y, self.y_train_3d['u'].shape)
+        for key, value in self.y_train_3d.items():
+            self.assertTrue(np.allclose(self.y_train_3d[key], y_train_new[key], rtol=1e-08, atol=1e-12))
 
-runner = unittest.TextTestRunner(verbosity=2).run(TestTransform("test_compare_transform"))
+
+# runner = unittest.TextTestRunner(verbosity=2).run(TestTransform("test_compare_transform"))
 runner = unittest.TextTestRunner(verbosity=2).run(TestTransform("test_transform_y"))
-
+runner = unittest.TextTestRunner(verbosity=2).run(TestTransform("test_transform_y_3D"))

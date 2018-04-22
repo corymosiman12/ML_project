@@ -16,10 +16,10 @@ filename_3d_w = data_folder + 'HIT_w.bin'
 filename_cvs = None
 # filename_cvs = '../data/isotropic2048.csv'
 
-Npoints_fine = 2048
+# Npoints_fine = 2048
 
-dx_fine = np.divide([np.pi, np.pi], [Npoints_fine, Npoints_fine])
-dx_coarse = np.divide([np.pi, np.pi], [256, 256])
+# dx_fine = np.divide([np.pi, np.pi], [Npoints_fine, Npoints_fine])
+# dx_coarse = np.divide([np.pi, np.pi], [256, 256])
 
 # n_sets = 4  # number of subsets for training and test data
 
@@ -56,8 +56,10 @@ def load_data(dimension=2):
         velocity['u'] = np.reshape(np.fromfile(filename_3d_u, dtype=np.float32), (256, 256, 256))
         velocity['v'] = np.reshape(np.fromfile(filename_3d_v, dtype=np.float32), (256, 256, 256))
         velocity['w'] = np.reshape(np.fromfile(filename_3d_w, dtype=np.float32), (256, 256, 256))
+        max_value = max(np.max(np.abs(velocity['u'])), np.max(np.abs(velocity['v'])), np.max(np.abs(velocity['w'])))
         for key, value in velocity.items():
-            velocity[key] = np.swapaxes(value, 0, 2) # to put x index in first place
+            velocity[key] = np.swapaxes(value, 0, 2)    # to put x index in first place
+            velocity[key] /= max_value
 
     return velocity
 

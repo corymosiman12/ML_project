@@ -153,31 +153,50 @@ def plot_vorticity_pdf(x_test, y_test, y_predict, plot_folder):
 
 def plot_velocities_and_spectra(x_test, y_test, y_predict, plot_folder):
     logging.info('Plot predicted velocities')
-    for test_example in range(3):
-        imagesc([y_test[test_example]['u'][0:32, 0:32],
-                 x_test[test_example]['u'][0:32, 0:32],
-                 y_predict[test_example]['u'][0:32, 0:32]],
-                [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], 
-                os.path.join(plot_folder, 'u_{}'.format(test_example)))
-        imagesc([y_test[test_example]['v'][0:32, 0:32],
-                 x_test[test_example]['v'][0:32, 0:32],
-                 y_predict[test_example]['v'][0:32, 0:32]],
-                [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], 
-                os.path.join(plot_folder, 'v_{}'.format(test_example)))
-        imagesc([y_test[test_example]['w'][0:32, 0:32],
-                 x_test[test_example]['w'][0:32, 0:32],
-                 y_predict[test_example]['w'][0:32, 0:32]],
-                [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'], 
-                os.path.join(plot_folder, 'w_{}'.format(test_example)))
+    dimension = len(y_test[0]['u'].shape)
+    if dimension == 2:
+        for test_example in range(3):
+            imagesc([y_test[test_example]['u'][0:32, 0:32],
+                     x_test[test_example]['u'][0:32, 0:32],
+                     y_predict[test_example]['u'][0:32, 0:32]],
+                    [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'],
+                    os.path.join(plot_folder, 'u_{}'.format(test_example)))
+            imagesc([y_test[test_example]['v'][0:32, 0:32],
+                     x_test[test_example]['v'][0:32, 0:32],
+                     y_predict[test_example]['v'][0:32, 0:32]],
+                    [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'],
+                    os.path.join(plot_folder, 'v_{}'.format(test_example)))
+            imagesc([y_test[test_example]['w'][0:32, 0:32],
+                     x_test[test_example]['w'][0:32, 0:32],
+                     y_predict[test_example]['w'][0:32, 0:32]],
+                    [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'],
+                    os.path.join(plot_folder, 'w_{}'.format(test_example)))
+    else:
+        for test_example in range(3):
+            imagesc([y_test[test_example]['u'][0:32, 0:32, 32],
+                     x_test[test_example]['u'][0:32, 0:32, 32],
+                     y_predict[test_example]['u'][0:32, 0:32, 32]],
+                    [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'],
+                    os.path.join(plot_folder, 'u_{}'.format(test_example)))
+            imagesc([y_test[test_example]['v'][0:32, 0:32, 32],
+                     x_test[test_example]['v'][0:32, 0:32, 32],
+                     y_predict[test_example]['v'][0:32, 0:32, 32]],
+                    [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'],
+                    os.path.join(plot_folder, 'v_{}'.format(test_example)))
+            imagesc([y_test[test_example]['w'][0:32, 0:32, 32],
+                     x_test[test_example]['w'][0:32, 0:32, 32],
+                     y_predict[test_example]['w'][0:32, 0:32, 32]],
+                    [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'],
+                    os.path.join(plot_folder, 'w_{}'.format(test_example)))
 
-        logging.info('Calculate ang plot spectra')
-        utils.spectral_density(y_test[test_example],
-                               os.path.join(plot_folder, 'true{}'.format(test_example)))
-        utils.spectral_density(x_test[test_example],
-                               os.path.join(plot_folder, 'filtered{}'.format(test_example)))
-        utils.spectral_density(y_predict[test_example],
-                                os.path.join(plot_folder, 'predicted{}'.format(test_example)))
+    logging.info('Calculate ang plot spectra')
+    utils.spectral_density(y_test[test_example],
+                           os.path.join(plot_folder, 'true{}'.format(test_example)))
+    utils.spectral_density(x_test[test_example],
+                           os.path.join(plot_folder, 'filtered{}'.format(test_example)))
+    utils.spectral_density(y_predict[test_example],
+                            os.path.join(plot_folder, 'predicted{}'.format(test_example)))
 
-        spectra(plot_folder, os.path.join(plot_folder, 'spectra{}'.format(test_example)), test_example)
+    spectra(plot_folder, os.path.join(plot_folder, 'spectra{}'.format(test_example)), test_example)
 
 

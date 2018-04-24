@@ -4,15 +4,11 @@ mpl.use('pdf')
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import gc
-import glob
 import logging
 import utils
 import os
+import scipy.ndimage as ndimage
 
-
-
-# mpl.style.use(['dark_background','mystyle'])
-# mpl.style.use(['mystyle'])
 
 # mpl.rcParams['figure.figsize'] = 6.5, 2.2
 # plt.rcParams['figure.autolayout'] = True
@@ -39,12 +35,15 @@ mpl.rcParams['ytick.minor.width'] = 1
 plt.rcParams['axes.linewidth'] = 1
 
 
-def imagesc(Arrays, titles, name=None):
+def imagesc(Arrays, titles, name=None, limits=None):
     axis = [0, np.pi, 0, np.pi]
 
     cmap = plt.cm.jet  # define the colormap
     # cmap = plt.cm.binary
-    norm = mpl.colors.Normalize(vmin=-0.7, vmax=0.7)
+    if limits==None:
+        norm = mpl.colors.Normalize(vmin=-0.7, vmax=0.7)
+    else:
+        norm = mpl.colors.Normalize(vmin=limits[0], vmax=limits[1])
 
     if len(Arrays) > 1:
         fig, axes = plt.subplots(nrows=1, ncols=len(Arrays), sharey=True, figsize=(10, 4))
@@ -105,6 +104,46 @@ def spectra(folder, fname, ind):
     fig.subplots_adjust(left=0.16, right=0.95, bottom=0.2, top=0.87)
     fig.savefig(fname)
     plt.close('all')
+
+
+def plot_tau(x_test, y_test, y_predict, plot_folder):
+    """Plot Reynolds stresses tau fields and pdf."""
+
+    sigma = [1, 1.1, 0.9]
+    logging.info('Plot tau')
+    for test_example in range(3):
+        tau = dict()
+        tau_true = dict()
+        for u_i in ['u', 'v', 'w']:
+            for u_j in ['u', 'v', 'w']:
+                tmp = y_predict[test_example][u_i]*y_predict[test_example][u_j]
+                tmp = ndimage.gaussian_filter(tmp, sigma=sigma[test_example], mode='wrap', truncate=500)
+                tau[u_i+u_j] = x_test[test_example][u_i]*x_test[test_example][u_j] - tmp
+                tmp = y_test[test_example][u_i]*y_test[test_example][u_j]
+                tmp = ndimage.gaussian_filter(tmp, sigma=sigma[test_example], mode='wrap', truncate=500)
+                tau_true[u_i + u_j] = x_test[test_example][u_i] * x_test[test_example][u_j] - tmp
+
+        imagesc([tau_true['uu'][:, :, 32], tau_true['uv'][:, :, 32], tau_true['uw'][:, :, 32]],
+                titles=[r'$\tau^{true}_{11}$', r'$\tau^{true}_{12}$', r'$\tau^{true}_{12}$'],
+                name=os.path.join(plot_folder, 'tau_true{}'.format(test_example)), limits=[-0.07, 0.07])
+        imagesc([tau['uu'][:, :, 32], tau['uv'][:, :, 32], tau['uw'][:, :, 32]],
+                titles=[r'$\tau_{11}$', r'$\tau_{12}$', r'$\tau_{12}$'],
+                name=os.path.join(plot_folder, 'tau{}'.format(test_example)), limits=[-0.07, 0.07])
+
+        fig, axarr = plt.subplots(nrows=1, ncols=3, sharex=True, sharey=True, figsize=(6.5, 2.4))
+        for ind, key in enumerate(['uu', 'uv', 'uw']):
+            x, y = utils.pdf_from_array_with_x(tau_true[key], bins=100, range=[-0.1, 0.1])
+            axarr[ind].semilogy(x, y, label='true')
+            x, y = utils.pdf_from_array_with_x(tau[key], bins=100, range=[-0.1, 0.1])
+            axarr[ind].semilogy(x, y, label='modeled')
+        axarr[0].axis(xmin=-0.1, xmax=0.1, ymin=1e-3)
+        axarr[0].set_ylabel('pdf')
+        axarr[0].set_yscale('log')
+        plt.legend(loc=0)
+        fig.subplots_adjust(left=0.1, right=0.95, wspace=0.15, bottom=0.2, top=0.9)
+        fig.savefig(os.path.join(plot_folder, 'tau_pdf{}'.format(test_example)))
+        del fig, axarr
+        gc.collect()
 
 
 def plot_vorticity_pdf(x_test, y_test, y_predict, plot_folder):
@@ -190,13 +229,14 @@ def plot_velocities_and_spectra(x_test, y_test, y_predict, plot_folder):
                     os.path.join(plot_folder, 'w_{}'.format(test_example)))
 
     logging.info('Calculate ang plot spectra')
-    utils.spectral_density(y_test[test_example],
-                           os.path.join(plot_folder, 'true{}'.format(test_example)))
-    utils.spectral_density(x_test[test_example],
-                           os.path.join(plot_folder, 'filtered{}'.format(test_example)))
-    utils.spectral_density(y_predict[test_example],
-                            os.path.join(plot_folder, 'predicted{}'.format(test_example)))
+    for test_example in range(3):
+        utils.spectral_density(y_test[test_example],
+                               os.path.join(plot_folder, 'true{}'.format(test_example)))
+        utils.spectral_density(x_test[test_example],
+                               os.path.join(plot_folder, 'filtered{}'.format(test_example)))
+        utils.spectral_density(y_predict[test_example],
+                                os.path.join(plot_folder, 'predicted{}'.format(test_example)))
 
-    spectra(plot_folder, os.path.join(plot_folder, 'spectra{}'.format(test_example)), test_example)
+        spectra(plot_folder, os.path.join(plot_folder, 'spectra{}'.format(test_example)), test_example)
 
 

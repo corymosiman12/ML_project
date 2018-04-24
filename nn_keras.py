@@ -15,9 +15,10 @@ from sklearn.pipeline import Pipeline
 import matplotlib.pylab as plt
 
 class my_keras():
-    def __init__(self, num_epochs, num_neurons, num_inputs):
+    def __init__(self, num_epochs, num_neurons, num_inputs, num_neurons_L2 = None):
         self.epochs = num_epochs
         self.num_neurons = num_neurons
+        self.num_neurons_L2 = num_neurons_L2
         self.num_inputs = num_inputs
         self.predictions = []
         self.mse = []
@@ -35,7 +36,21 @@ class my_keras():
         self.model = model
         return self.model
 
-    def evaluate_model(self, X_train, y_train, X_validation, y_validation, plot_folder):
+    def two_layer_model(self):
+        # create model
+        model = Sequential()
+        model.add(Dense(self.num_neurons, input_shape=(self.num_inputs,), kernel_initializer='normal', activation='relu'))
+        model.add(Dense(self.num_neurons_L2, kernel_initializer='normal', activation='relu'))
+        model.add(Dense(1, kernel_initializer='normal'))
+
+        # compile model
+        model.compile(loss='mean_squared_error', optimizer='adam')
+        logging.info(model.summary())
+        self.model = model
+        return self.model
+
+
+    def evaluate_model(self, X_train, y_train, X_validation, y_validation, plot_folder, two_layer=False):
     # def evaluate_model(self, X_train, y_train):
         seed = 12
         seed = np.random.seed(seed)
@@ -44,7 +59,10 @@ class my_keras():
         # logging.info('X_train shape: {}'.format(X_train.shape))
 
         # Keras requirese to pass blank function to `build_fn`
-        self.estimator = KerasRegressor(build_fn=self.baseline_model, epochs=self.epochs, batch_size=64, verbose=2)
+        if two_layer:
+            self.estimator = KerasRegressor(build_fn=self.two_layer_model, epochs=self.epochs, batch_size=64, verbose=2)
+        else:
+            self.estimator = KerasRegressor(build_fn=self.baseline_model, epochs=self.epochs, batch_size=64, verbose=2)
         self.estimator_trained = self.estimator.fit(X_train, y_train, validation_data = (X_validation, y_validation))
         # logging.info("Train loss: {} Val loss: {}".format(self.estimator_trained.history['loss'], self.estimator_trained.history['val_loss']))
         self.plot_loss_per_epoch(plot_folder)

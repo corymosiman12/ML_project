@@ -1,8 +1,6 @@
 import numpy as np
 import logging
 import scipy.ndimage as ndimage
-
-
 import plotting
 import utils
 

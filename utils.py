@@ -2,6 +2,9 @@ import sys
 import numpy as np
 from numpy.fft import fftfreq, fft2, fftn
 import logging
+import nn_keras as nnk
+import extreme_learning_machine as elm
+import os
 
 
 def timer(start, end, label):
@@ -134,12 +137,12 @@ def sparse_dict(data_dict, n_coarse_points, start):
 
 
 def transform_dict_for_nn(x_dict, y_dict, n_input):
-    """ Transform dictionary of 'u', 'v', 'w' into array of form [n_input, 256*256*3]
+    """ Transform dictionary of 'u', 'v', 'w' into array of form [256*256*3, n_input]
     (combining all 3 velocities in 1 array)
     :param x_dict: dictionary with ['u'], ['v'], ['w'] of training data (filtered velocity)
     :param y_dict: dictionary with ['u'], ['v'], ['w'] of true data
     :param n_input: number of input parameters 9, 27 or 25(5*5 stencil)
-    :return: (x, y) where x is array of form [n_input, 256*256*3] and y is array of form [256*256*3]
+    :return: (x, y) where x is array of form [256*256*3, n_input] and y is array of form [256*256*3, 1]
     """
 
     n = x_dict['u'].size   # 256^2
@@ -211,16 +214,16 @@ def transform_dict_for_nn(x_dict, y_dict, n_input):
                 y[ind] = y_dict[keys[key_i]][i, j]
         count += 1
 
-    return x, y
+    return x.T, y.reshape(n, 1)
 
 
 def transform_dict_for_nn_3D(x_dict, y_dict, n_input):
-    """ Transform dictionary of 'u', 'v', 'w' into array of form [n_input, 64*64*64*3]
+    """ Transform dictionary of 'u', 'v', 'w' into array of form [64*64*64*3, n_input]
     (combining all 3 velocities in 1 array)
     :param x_dict: dictionary with ['u'], ['v'], ['w'] of training data (filtered velocity)
     :param y_dict: dictionary with ['u'], ['v'], ['w'] of true data
     :param n_input: number of input parameters 9, 27 or 25(5*5 stencil)
-    :return: (x, y) where x is array of form [n_input, 256*256*3] and y is array of form [256*256*3]
+    :return: (x, y) where x is array of form [64*64*64*3, 1] and y is array of form [64*64*64*3, 1]
     """
 
     n = x_dict['u'].size   # 64^3 = 16777216
@@ -255,7 +258,7 @@ def transform_dict_for_nn_3D(x_dict, y_dict, n_input):
                     y[ind] = y_dict[keys[key_i]][i, j, k]
         count += 1
 
-    return x, y
+    return x.T, y.reshape(n, 1)
 
 
 def untransform_y(y, shape):
@@ -299,78 +302,109 @@ def untransform_y_3D(y, shape):
     return y_dict
 
 
-def final_transform(X, y, n_features, train=False, index=False):
+def final_transform(X, y, n_features, dimension, train=False):
+    """ Return training examples as observations (rows) x features (columns)
+    :param X: dict with keys 'u', 'v', 'w' (train) or list of dict with keys 'u', 'v', 'w' (test).
+                The value of all dictionaries is a (256 row) x (256 column) array.  Filter/noise
+                has already been applied.
+    :param y: same as X
+    :param n_features: defines the number of features for each training example
+    :param train: basically a switcher for the two different data structures (list vs. dict)
     """
-    To get values by index: [begin_index:end_index]
-        u: [:256*256]
-        v: [256*256:256*256*2]
-        w: [256*256*2:]
-    """
-    i = 256*256
+    if dimension == 2:
+        i = 256*256
+        transform_in_nn = transform_dict_for_nn
+    else:
+        i = 64*64*64
+        transform_in_nn = transform_dict_for_nn_3D
     if train:
-        """
-        transform_dict_for_nn() returns:
-            1. array with shape = (n_inputs, 256*256*3)
-            2. vector with shape = (256*256*3, )
-        tr = transformed
-        """
-        X, y = transform_dict_for_nn(X, y, n_features)
-        if index.lower() == 'u':
-            X = X[:, :i].T
-            y = y[:i].reshape(i, 1)
-            return (X, y)
-        elif index.lower() == 'v':
-            X = X[:, i:i*2].T
-            y = y[i:i*2].reshape(i, 1)
-            return (X, y)
-        elif index.lower() == 'w':
-            X = X[:, i*2:].T
-            y = y[i*2:].reshape(i, 1)
-            return (X, y)
-        else:
-            logging.fatal('Invalid index to train on. Enter "u", "v", "w"')
-            sys.exit()
+        X, y = transform_in_nn(X, y, n_features)
+        return X, y
+
     else:
         """
         X_test_0_tr, y_test_0_tr: sigma = 1 filtered 
         X_text_1_tr, y_test_1_tr: sigma = 1.1 filtered
         X_test_2_tr, y_test_2_tr: sigma = 0.9 filtered
         """
-        X_test_0_tr, y_test_0_tr = transform_dict_for_nn(X[0], y[0], n_features)
-        X_test_1_tr, y_test_1_tr = transform_dict_for_nn(X[1], y[1], n_features)
-        X_test_2_tr, y_test_2_tr = transform_dict_for_nn(X[2], y[2], n_features)
-
-        X_test_0_u = X_test_0_tr[:, :i].T
-        y_test_0_u = y_test_0_tr[:i].reshape(i, 1)
-        X_test_0_v = X_test_0_tr[:, i:i*2].T
-        y_test_0_v = y_test_0_tr[i:i*2].reshape(i, 1)
-        X_test_0_w = X_test_0_tr[:, i*2:].T
-        y_test_0_w = y_test_0_tr[i*2:].reshape(i, 1)
-
-        X_test_0 = {'u': X_test_0_u, 'v': X_test_0_v, 'w': X_test_0_w}
-        y_test_0 = {'u': y_test_0_u,'v': y_test_0_v,'w': y_test_0_w}
+        X_test = []
+        y_test = []
+        for test_case in range(len(X)):
+            X_test[test_case], y_test[test_case] = transform_in_nn(X[test_case], y[test_case], n_features)
         
-        X_test_1_u = X_test_1_tr[:, :i].T
-        y_test_1_u = y_test_1_tr[:i].reshape(i, 1)
-        X_test_1_v = X_test_1_tr[:, i:i*2].T
-        y_test_1_v = y_test_1_tr[i:i*2].reshape(i, 1)
-        X_test_1_w = X_test_1_tr[:, i*2:].T
-        y_test_1_w = y_test_1_tr[i*2:].reshape(i, 1)
+        return X_test, y_test
 
-        X_test_1 = {'u': X_test_1_u,'v': X_test_1_v,'w': X_test_1_w}
-        y_test_1 = {'u': y_test_1_u,'v': y_test_1_v,'w': y_test_1_w}
 
-        X_test_2_u = X_test_2_tr[:, :i].T
-        y_test_2_u = y_test_2_tr[:i].reshape(i, 1)
-        X_test_2_v = X_test_2_tr[:, i:i*2].T
-        y_test_2_v = y_test_2_tr[i:i*2].reshape(i, 1)
-        X_test_2_w = X_test_2_tr[:, i*2:].T
-        y_test_2_w = y_test_2_tr[i*2:].reshape(i, 1)
 
-        X_test_2 = {'u': X_test_2_u,'v': X_test_2_v,'w': X_test_2_w}
-        y_test_2 = {'u': y_test_2_u,'v': y_test_2_v,'w': y_test_2_w}
+def run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final,
+            num_features, num_epochs, num_neurons_L1, num_neurons_L2, base_plot_folder):
+    
+    if model_type == 'FF_1L':
+        for epochs in num_epochs:
+            for neurons in num_neurons_L1:
+                logging.info('Evaluating model {} for {} features, {} epochs, and {} neurons'.format(model_type, str(features), str(epochs), str(neurons)))
+    
+                # Create folder for plots
+                plot_folder = base_plot_folder
+                plot_folder = os.path.join(plot_folder, '{}_neurons'.format(str(neurons)),
+                                                        '{}_epochs'.format(str(epochs)))
+                if not os.path.isdir(plot_folder):
+                    os.makedirs(plot_folder)
+    
+                model = nnk.my_keras(epochs, neurons, num_features)
+    
+                # Evaluate model, validating on same test set key as trained on
+                model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder)
+                model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder)
+                model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder)
 
-        X_test = [X_test_0, X_test_1, X_test_2]
-        y_test = [y_test_0, y_test_1, y_test_2]
+                # Predict on each of the test sets and plot MSE:
+                # MSE plotting currently not working
+                model.evaluate_test_sets(X_test_final, y_test_final)
+    
+                plotting.plot_velocities_and_spectra(X_test, y_test, model.predictions, plot_folder)
 
-        return (X_test, y_test)
+    elif model_type == 'FF_2L':
+        for epochs in num_epochs:
+            for neurons in num_neurons_L1:
+                for neurons2 in num_neurons_L2:
+                    logging.info('Evaluating model {} for {} features, {} epochs, and {} neurons'.format(model_type, str(features), str(epochs), str(neurons)))
+        
+                    # Create folder for plots
+                    plot_folder = base_plot_folder
+                    plot_folder = os.path.join(plot_folder, '{}_neurons'.format(str(neurons)),
+                                                            '{}_epochs'.format(str(epochs)))
+                    if not os.path.isdir(plot_folder):
+                        os.makedirs(plot_folder)
+        
+                    model = nnk.my_keras(epochs, neurons, num_features, neurons2)
+        
+                    # Evaluate model, validating on same test set key as trained on
+                    model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder, two_layer=True)
+                    model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder, two_layer=True)
+                    model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder, two_layer=True)
+
+                    # Predict on each of the test sets and plot MSE:
+                    # MSE plotting currently not working
+                    model.evaluate_test_sets(X_test_final, y_test_final)
+        
+                    plotting.plot_velocities_and_spectra(X_test, y_test, model.predictions, plot_folder)
+
+    elif model_type == 'Olga_ELM':
+        # TODO
+        for neurons in num_neurons_L1:
+            logging.info('Evaluating model {} for {} features and {} neurons'.format(model_type, str(features), str(neurons)))
+
+            # Create folder for plots
+            plot_folder = plot_folder
+            plot_folder = os.path.join(plot_folder, '{}_neurons'.format(str(neurons)))
+
+            if not os.path.isdir(plot_folder):
+                os.makedirs(plot_folder)
+            
+            model = elm.Olga_ELM(neurons, num_features)
+
+    elif model_type == 'Rahul_ELM':
+        # TODO
+        pass
+    

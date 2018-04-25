@@ -3,17 +3,13 @@ import utils
 import os
 import logging
 import numpy as np
-import extreme_learning_machine as elm
-import plotting
 import utils
 import scipy.ndimage as ndimage
 import sys
 import create_features as cf
 import nn_functions as nnf
-import nn_keras as nnk
 from keras.wrappers.scikit_learn import KerasRegressor
-import plotting
-
+from time import time
 plot_folder = './plots/'
 Npoints_coarse2D = 256
 Npoints_coarse3D = 64
@@ -63,7 +59,6 @@ def standard_elm_func(x_train, y_train, x_test, y_test):
         te_result =  elmk.test(te_set)
         y_predicted[i] = te_result.predicted_targets  
     print("y_predicted \n")
-    print(y_predicted)
+    #print(y_predicted)
+    return y_predicted
     
-    
-standard_elm_func(X_train, y_train, X_test, y_test)

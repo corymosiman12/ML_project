@@ -4,6 +4,7 @@ from numpy.fft import fftfreq, fft2, fftn
 import logging
 import nn_keras as nnk
 import extreme_learning_machine as elm
+import plotting
 import os
 
 
@@ -214,7 +215,7 @@ def transform_dict_for_nn(x_dict, y_dict, n_input):
                 y[ind] = y_dict[keys[key_i]][i, j]
         count += 1
 
-    return x.T, y.reshape(n, 1)
+    return x.T, y.reshape(3*n, 1)
 
 
 def transform_dict_for_nn_3D(x_dict, y_dict, n_input):
@@ -258,7 +259,7 @@ def transform_dict_for_nn_3D(x_dict, y_dict, n_input):
                     y[ind] = y_dict[keys[key_i]][i, j, k]
         count += 1
 
-    return x.T, y.reshape(n, 1)
+    return x.T, y.reshape(3*n, 1)
 
 
 def untransform_y(y, shape):
@@ -327,8 +328,8 @@ def final_transform(X, y, n_features, dimension, train=False):
         X_text_1_tr, y_test_1_tr: sigma = 1.1 filtered
         X_test_2_tr, y_test_2_tr: sigma = 0.9 filtered
         """
-        X_test = []
-        y_test = []
+        X_test = ['', '', '']
+        y_test = ['', '', '']
         for test_case in range(len(X)):
             X_test[test_case], y_test[test_case] = transform_in_nn(X[test_case], y[test_case], n_features)
         
@@ -337,17 +338,24 @@ def final_transform(X, y, n_features, dimension, train=False):
 
 
 def run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final,
-            num_features, num_epochs, num_neurons_L1, num_neurons_L2, base_plot_folder):
-    
+            num_features, num_epochs, num_neurons_L1, num_neurons_L2, base_plot_folder, 
+            X_test, y_test, dimension):
+    predictions = []
+    mse = []
+    if dimension == 2:
+        untransform = untransform_y
+        shape = [256, 256]
+    else:
+        untransform = untransform_y_3D
+        shape = [64, 64, 64]
     if model_type == 'FF_1L':
         for epochs in num_epochs:
             for neurons in num_neurons_L1:
-                logging.info('Evaluating model {} for {} features, {} epochs, and {} neurons'.format(model_type, str(features), str(epochs), str(neurons)))
+                logging.info('Evaluating model {} for {} features, {} epochs, and {} neurons'.format(model_type, str(num_features), str(epochs), str(neurons)))
     
                 # Create folder for plots
                 plot_folder = base_plot_folder
-                plot_folder = os.path.join(plot_folder, '{}_neurons'.format(str(neurons)),
-                                                        '{}_epochs'.format(str(epochs)))
+                plot_folder = os.path.join(plot_folder, '{}neurons_{}epochs'.format(str(neurons), str(epochs)))
                 if not os.path.isdir(plot_folder):
                     os.makedirs(plot_folder)
     
@@ -355,14 +363,17 @@ def run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final
     
                 # Evaluate model, validating on same test set key as trained on
                 model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder)
-                model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder)
-                model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder)
 
                 # Predict on each of the test sets and plot MSE:
                 # MSE plotting currently not working
                 model.evaluate_test_sets(X_test_final, y_test_final)
-    
-                plotting.plot_velocities_and_spectra(X_test, y_test, model.predictions, plot_folder)
+
+                untransformed_predictions = untransform(model.predictions, shape)
+                plotting.plot_velocities_and_spectra(X_test, y_test, untransformed_predictions, plot_folder)
+                predictions.append(model.predictions)
+                mse.append(model.mse)
+        
+        return predictions, mse
 
     elif model_type == 'FF_2L':
         for epochs in num_epochs:
@@ -380,8 +391,6 @@ def run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final
                     model = nnk.my_keras(epochs, neurons, num_features, neurons2)
         
                     # Evaluate model, validating on same test set key as trained on
-                    model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder, two_layer=True)
-                    model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder, two_layer=True)
                     model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder, two_layer=True)
 
                     # Predict on each of the test sets and plot MSE:

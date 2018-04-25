@@ -42,7 +42,7 @@ def main():
     Rahul_ELM:  num_epochs = None, num_neurons_L2 = None
     """
     num_features = 9 # pass as single integer
-    num_epochs = [5, 10, 15] # pass as list to iterate through or None
+    num_epochs = [1, 10, 15] # pass as list to iterate through or None
     num_neurons_L1 = [50, 100, 150] # pass as list to iterate through
     num_neurons_L2 = None # pass as list to iterate through or None
 
@@ -65,9 +65,9 @@ def main():
 
     # Update plot folder with model, dimensions, filter_type, num_features
     plot_folder = os.path.join(plot_folder, "{}".format(model_type), 
-                                            "{}_dim".format(str(dimension)),
-                                            "{}_filter".format(filter_type),
-                                            "{}_features".format(str(num_features)))
+                                            "{}dim_{}_{}feat".format(str(dimension), 
+                                                                    filter_type, 
+                                                                    str(num_features)))
     if not os.path.isdir(plot_folder):
         os.makedirs(plot_folder)
 
@@ -90,7 +90,8 @@ def main():
 
     ########################## RUN MODEL ##########################  
     utils.run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final,
-                              num_features, num_epochs, num_neurons_L1, num_neurons_L2, plot_folder)
+                    num_features, num_epochs, num_neurons_L1, num_neurons_L2, plot_folder, 
+                    X_test, y_test, dimension)
 
 
 

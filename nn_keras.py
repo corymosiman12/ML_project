@@ -54,9 +54,6 @@ class my_keras():
     # def evaluate_model(self, X_train, y_train):
         seed = 12
         seed = np.random.seed(seed)
-        # shp = X_train.shape
-
-        # logging.info('X_train shape: {}'.format(X_train.shape))
 
         # Keras requirese to pass blank function to `build_fn`
         if two_layer:
@@ -65,9 +62,9 @@ class my_keras():
             self.estimator = KerasRegressor(build_fn=self.baseline_model, epochs=self.epochs, batch_size=64, verbose=2)
         self.estimator_trained = self.estimator.fit(X_train, y_train, validation_data = (X_validation, y_validation))
         # logging.info("Train loss: {} Val loss: {}".format(self.estimator_trained.history['loss'], self.estimator_trained.history['val_loss']))
-        self.plot_loss_per_epoch(plot_folder)
+        self.plot_loss_per_epoch(plot_folder, two_layer)
 
-    def plot_loss_per_epoch(self, plot_folder):
+    def plot_loss_per_epoch(self, plot_folder, two_layer):
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10,5))
         ax.plot(range(1,self.epochs+1), self.estimator_trained.history['loss'], color="steelblue", marker="o", label="training")
         ax.plot(range(1,self.epochs+1), self.estimator_trained.history['val_loss'], color="green", marker="o", label="validation")
@@ -76,21 +73,29 @@ class my_keras():
         plt.xticks(range(1,self.epochs+2,2))
         ax.set_xlabel("epoch", fontsize=16)
         ax.set_ylabel("loss", fontsize=16)
-        plot_folder = os.path.join(plot_folder, datetime.now().strftime('%Y-%m-%d %H_%M') + '_loss_per_epoch.png')
+        if two_layer:
+            title = "Two Layer $[{}, {}]$ Neurons".format(self.num_neurons, self.num_neurons_L2)
+            ax.set_title(title)
+            plot_folder = os.path.join(plot_folder, 'FF_2L_{}_{}_neurons_loss_per_epoch.png'.format(str(self.num_neurons),
+                                                                                        str(self.num_neurons_L2)))
+        else:
+            title = "Single Layer {} Neurons".format(self.num_neurons)
+            ax.set_title(title)
+            plot_folder = os.path.join(plot_folder, 'FF_1L_{}_neurons_loss_per_epoch.png'.format(str(self.num_neurons)))
         plt.savefig(plot_folder)
 
     def evaluate_test_sets(self, X_test_list, y_test_list):
         for sigma in range(len(X_test_list)):
-            predict_dict = {}
-            mse_dict = {}
-            for key, value in X_test_list[sigma].items():
-                prediction = self.estimator.predict(X_test_list[sigma][key])
-                # print(type(prediction), prediction.shape)
-                error = mean_squared_error(y_test_list[sigma][key], prediction)
-                predict_dict[key] = prediction.reshape(-1,256)
-                mse_dict[key] = error
-            self.predictions.append(predict_dict)
-            self.mse.append(mse_dict)
+            predict_list = ['','','']
+            mse_list = ['','','']
+            for test in range(len(X_test_list)):
+                logging.info("Evaluating test set: {}".format(test))
+                prediction = self.estimator.predict(X_test_list[test])
+                error = mean_squared_error(y_test_list[test], prediction)
+                predict_list[test] = prediction.reshape(-1, len(X_test_list[test]))
+                mse_list[test] = error
+            self.predictions.append(predict_list)
+            self.mse.append(mse_list)
         # self.plot_mse()
 
     def plot_mse(self):

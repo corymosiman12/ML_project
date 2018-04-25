@@ -27,44 +27,43 @@ velocity = data.load_data()
 X_train, y_train, X_test, y_test = data.form_train_test_sets(velocity)
 
 
-# Data transformation
-#print(X_test[0]['u'].shape)
-print("len of y",len(y_test))
-print("shape of y", y_test.shape)
-#print(y_train)
+def standard_elm_func(x_train, y_train, x_test, y_test):
+    nn_structure = [9, 100, 1]
+    y_predicted = np.empty_like(y_test)
+    n = 3*x_train['u'].size
+    logging.info('transforming dictionaries to input')
+    x, y = utils.transform_dict_for_nn(X_train, y_train, nn_structure[0])
+    x = np.transpose(x)
+    y = np.transpose([y])
+    print("original shape", x.shape)
+    tr_set = np.concatenate((y, x), 1)[:1000] #standard format for elm function - y_train + x_train
+    print(tr_set.shape)
+    
+    logging.info('training...')
+   
+    # create a classifier
+    elmk = elm.ELMKernel()
+    #training
+    start_training = time()
+    tr_result = elmk.train(tr_set)
+    end_training = time()
+    utils.timer(start_training, end_training, 'Training time')
+    
+   
+    
 
-#print(X_train['u'].shape)
-
-import elm as standard_elm
-# create a classifier
-elmk = standard_elm.ELMKernel()
-nn_structure = [9, 100, 1]
-x, y = utils.transform_dict_for_nn(X_train, y_train, nn_structure[0])
-x = np.transpose(x)
-y = np.transpose([y])
-
-tr_set = np.concatenate((y, x), 1) #standard format for elm function - y_train + x_train
-
-x_test, y_test = utils.transform_dict_for_nn(X_test[0], y_test[0], nn_structure[0])
-#x_test = np.transpose(x_test)
-#y_test = np.transpose([y_test])
-
-#te_set = np.concatenate((y_test, x_test), 1)
-
-# load dataset
-data = elm.read("iris.data.txt")
-
-# create a classifier
-elmk = elm.ELMKernel()
-
-
-# split data in training and testing sets
-# use 80% of dataset to training and shuffle data before splitting
-tr_set, te_set = elm.split_sets(data, training_percent=.8, perm=True)
-
-#train and test
-# results are Error objects
-tr_result = elmk.train(tr_set)
-te_result = elmk.test(te_set)
-print(te_result.get_accuracy())
-te_result.predicted_targets
+    #print("shape of y_predicted", y_predicted.shape)
+    logging.info('testing...')
+    for i in range(len(x_test)):
+        x, y = utils.transform_dict_for_nn(x_test[i], y_test[i], nn_structure[0] )
+        x = np.transpose(x)
+        y = np.transpose([y])
+        te_set = np.concatenate((y, x), 1)[:1000]
+        print("test shape",te_set.shape)
+        te_result =  elmk.test(te_set)
+        y_predicted[i] = te_result.predicted_targets  
+    print("y_predicted \n")
+    print(y_predicted)
+    
+    
+standard_elm_func(X_train, y_train, X_test, y_test)

@@ -1,18 +1,15 @@
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 import numpy as np
 import pandas as pd
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.wrappers.scikit_learn import KerasRegressor
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import cross_validate
-from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
 import matplotlib.pylab as plt
+from time import time
+import utils
 
 class my_keras():
     def __init__(self, num_epochs, num_neurons, num_inputs, num_neurons_L2 = None):
@@ -21,6 +18,7 @@ class my_keras():
         self.num_neurons_L2 = num_neurons_L2
         self.num_inputs = num_inputs
         self.predictions = []
+        self.true = []
         self.mse = []
 
     # def baseline_model(num_neurons, input_shape):
@@ -60,7 +58,10 @@ class my_keras():
             self.estimator = KerasRegressor(build_fn=self.two_layer_model, epochs=self.epochs, batch_size=64, verbose=2)
         else:
             self.estimator = KerasRegressor(build_fn=self.baseline_model, epochs=self.epochs, batch_size=64, verbose=2)
+        start_training = time()
         self.estimator_trained = self.estimator.fit(X_train, y_train, validation_data = (X_validation, y_validation))
+        end_training = time()
+        self.training_time = utils.timer(start_training, end_training, 'Training time')
         # logging.info("Train loss: {} Val loss: {}".format(self.estimator_trained.history['loss'], self.estimator_trained.history['val_loss']))
         self.plot_loss_per_epoch(plot_folder, two_layer)
 
@@ -85,17 +86,20 @@ class my_keras():
         plt.savefig(plot_folder)
 
     def evaluate_test_sets(self, X_test_list, y_test_list):
+        """ Return training examples as observations (rows) x features (columns)
+        :param X_test_list: list of len=3 with each element as an array with rows == (256*256*3 | 64*64*64*3) and
+                            columns == (9 | 25 | 27)
+        :param y: list of len=3 with each element as a single column array with same num rows as X_test_list
+        :return: none - but append predictions and mse
+        """
+
         for sigma in range(len(X_test_list)):
-            predict_list = ['','','']
-            mse_list = ['','','']
-            for test in range(len(X_test_list)):
-                logging.info("Evaluating test set: {}".format(test))
-                prediction = self.estimator.predict(X_test_list[test])
-                error = mean_squared_error(y_test_list[test], prediction)
-                predict_list[test] = prediction.reshape(-1, len(X_test_list[test]))
-                mse_list[test] = error
-            self.predictions.append(predict_list)
-            self.mse.append(mse_list)
+            logging.info("Evaluating test set: {}".format(sigma))
+            prediction = self.estimator.predict(X_test_list[sigma])
+            error = mean_squared_error(y_test_list[sigma], prediction)
+            self.predictions.append(prediction)
+            self.true.append(y_test_list[sigma])
+            self.mse.append(error)
         # self.plot_mse()
 
     def plot_mse(self):

@@ -1,15 +1,17 @@
 import numpy as np
+from sklearn.metrics import mean_squared_error
 import logging
 import utils    
 from time import time
 
-nn_structure = [27, 100, 1]
+# nn_structure = [27, 100, 1]
 
 class Olga_ELM():
     def __init__(self, num_neurons, num_inputs):
         self.num_neurons = num_neurons
         self.num_inputs = num_inputs
         self.predictions = []
+        self.true = []
         self.mse = []
 
     def tan_sigmoid(self, a):
@@ -19,52 +21,57 @@ class Olga_ELM():
 
     def training(self, x, W, b, f, y):
 
-        z = W.dot(x) + b        # z^(2) = W^(1)*a^(1) + b^(1)
+        z = W.dot(x.T) + b        # z^(2) = W^(1)*a^(1) + b^(1)
         a = f(z)                # activation
-        W_opt = np.linalg.pinv(a.T) @ y.T
+        W_opt = np.linalg.pinv(a.T) @ y
         return W_opt.T
 
 
     def predicting(self, x, W, b, f, W_opt):
 
-        z = W.dot(x)+b
+        z = W.dot(x.T)+b
         a = f(z)
         y = W_opt.dot(a)
-        return y
+        return y.T
 
 
     def extreme_learning_machine(self, x_train, y_train, x_test, y_test):
 
         y_predicted = np.empty_like(y_test)
-        n = 3*x_train['u'].size
+        n = x_train.size
 
-        logging.info('transforming dictionaries to input')
-        dimension = len(x_train['u'].shape)
-        if dimension == 2:
-            transform_in_nn = utils.transform_dict_for_nn
-            untransform = utils.untransform_y
-        else:
-            transform_in_nn = utils.transform_dict_for_nn_3D
-            untransform = utils.untransform_y_3D
+        # logging.info('transforming dictionaries to input')
+        # dimension = len(x_train['u'].shape)
+        # if dimension == 2:
+        #     transform_in_nn = utils.transform_dict_for_nn
+        #     untransform = utils.untransform_y
+        # else:
+        #     transform_in_nn = utils.transform_dict_for_nn_3D
+        #     untransform = utils.untransform_y_3D
 
-        x, y = transform_in_nn(x_train, y_train, nn_structure[0])
+        # x, y = transform_in_nn(x_train, y_train, nn_structure[0])
 
         tiny = 1e-12
-        W = tiny*np.random.random_sample(size=(nn_structure[1], nn_structure[0]))
-        b = tiny*np.random.random_sample(size=(nn_structure[1], n))
-
+        W = tiny*np.random.random_sample(size=(self.num_neurons, self.num_inputs))
+        b = tiny*np.random.random_sample(size=(self.num_neurons, 1))
+        print('W shape: {}, b shape: {}, x_train shape: {}'.format(W.shape, b.shape, x_train.shape))
         logging.info('training...')
         start_training = time()
-        W_opt = training(x, W, b, tan_sigmoid, y)
+        W_opt = self.training(x_train, W, b, self.tan_sigmoid, y_train)
         end_training = time()
-        utils.timer(start_training, end_training, 'Training time')
+        self.training_time = utils.timer(start_training, end_training, 'Training time')
 
         logging.info('testing...')
         for i in range(len(x_test)):
-            x, y = transform_in_nn(x_test[i], y_test[i], nn_structure[0])
-            y_pred = predicting(x, W, b, tan_sigmoid, W_opt)
-            error = np.linalg.norm(y - y_pred) / n
-            y_predicted[i] = untransform(y_pred, y_test[i]['u'].shape)
-            print('error', error)
+            # x, y = transform_in_nn(x_test[i], y_test[i], self.num_inputs)
+            y_pred = self.predicting(x_test[i], W, b, self.tan_sigmoid, W_opt)
+            # error = np.linalg.norm(y - y_pred) / n
+            error = mean_squared_error(y_test[i], y_pred)
+            self.predictions.append(y_pred)
+            self.mse.append(error)
+            self.true.append(y_test[i])
+            print("finished test: {}".format(i))
+            # y_predicted[i] = untransform(y_pred, y_test[i]['u'].shape)
+            # print('error', error)
 
-        return y_predicted
+

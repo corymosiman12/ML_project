@@ -12,7 +12,9 @@ def main():
     # Define base variables
     Npoints_coarse2D = 256
     Npoints_coarse3D = 64
+    data_output_folder_base = './data_output/'
     plot_folder_base = './plots/'
+    data_output_folder = data_output_folder_base
     plot_folder = plot_folder_base
 
     # Set logging configuration
@@ -27,12 +29,10 @@ def main():
     # FF_1L = Feed forward single layer with keras
     # FF_2L = Feed forward two layer with keras
     # Olga_ELM = Extreme learning machine created by Olga
-    # Rahul_ELM = Extreme learning machine using 'elm' package
-    model_type = 'FF_1L'
+    model_type = 'Olga_ELM'
     assert model_type == 'FF_1L' \
         or model_type == 'FF_2L' \
-        or model_type == 'Olga_ELM' \
-        or model_type == 'Rahul_ELM', 'Incorrect model_type: %r' % model_type
+        or model_type == 'Olga_ELM', 'Incorrect model_type: %r' % model_type
 
     # Define the number of inputs to be used for creating the feature vectors.  See below for requirements:
     """
@@ -42,9 +42,12 @@ def main():
     Rahul_ELM:  num_epochs = None, num_neurons_L2 = None
     """
     num_features = 9 # pass as single integer
-    num_epochs = [1, 10, 15] # pass as list to iterate through or None
-    num_neurons_L1 = [50, 100, 150] # pass as list to iterate through
-    num_neurons_L2 = None # pass as list to iterate through or None
+    # num_epochs = [1, 10, 15] # pass as list to iterate through or None
+    num_epochs = [2, 3]
+    # num_neurons_L1 = [50, 100, 150] # pass as list to iterate through
+    num_neurons_L1 = [15, 21]
+    num_neurons_L2 = [5, 6] # pass as list to iterate through or None
+    # optimizer = 
 
     ########################## FORMAT TRAINING AND TESTING ##########################    
     # Select number of dimensions to use for analysis: 2 or 3
@@ -57,7 +60,7 @@ def main():
         or filter_type == "median" \
         or filter_type == "noise", 'Incorrect filter type: %r' % filter_type
 
-    # Define arguments based on dimension required dimensions
+    # Define arguments based on required dimensions
     if dimension == 2:
         Npoints_coarse = Npoints_coarse2D
     else:
@@ -74,7 +77,7 @@ def main():
     # Load in data
     velocity = data.load_data(dimension)
 
-    # Form train and test sets.  Apply filter first
+    # Form train and test sets. Below just applies filter, keeping it in shapes of [256, 256] or [64, 64, 64]
     X_train, y_train, X_test, y_test = data.form_train_test_sets(velocity, Npoints_coarse=Npoints_coarse, filter_type=filter_type)
     
     # Reshape training into arrays of observations (rows) and features (columns)
@@ -82,17 +85,16 @@ def main():
     X_train_final, y_train_final = utils.final_transform(X_train, y_train, n_features=num_features, 
                                                         dimension=dimension, train=True)
 
-    # Reshape testing into list base on sigma [0.9, 1, 1.1] of arrays 
+    # Reshape testing into list based on sigma [0.9, 1, 1.1] of arrays 
     # of observations (rows) and features (columns)
     # Observations are of all components of velocity (u, v, and w)
     X_test_final, y_test_final = utils.final_transform(X_test, y_test, n_features=num_features, 
                                                         dimension=dimension)
 
     ########################## RUN MODEL ##########################  
-    utils.run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final,
-                    num_features, num_epochs, num_neurons_L1, num_neurons_L2, plot_folder, 
-                    X_test, y_test, dimension)
-
+    predictions, mse = utils.run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final,
+                                    num_features, num_epochs, num_neurons_L1, num_neurons_L2, plot_folder, 
+                                    X_test, y_test, dimension)
 
 
 if __name__ == '__main__':

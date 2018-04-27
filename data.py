@@ -128,11 +128,11 @@ def form_train_test_sets(velocity, Npoints_coarse=256, filter_type='gaussian'):
 
     elif filter_type == 'median':
         for key, value in data_train.items():
-            filtered_train[key] = ndimage.median_filter(value, size=10,  mode='wrap')
-        s = [10, 13, 7]
+            filtered_train[key] = ndimage.median_filter(value, size=5,  mode='wrap')
+        s = [5, 13, 7]
         for i in range(3):
             for key, value in data_test[i].items():
-                filtered_test[i][key] = ndimage.median_filter(value, size=s, mode='wrap')
+                filtered_test[i][key] = ndimage.median_filter(value, size=s[i], mode='wrap')
 
     elif filter_type == 'noise':
         for key, value in data_train.items():

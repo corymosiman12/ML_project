@@ -3,7 +3,8 @@ import numpy as np
 from numpy.fft import fftfreq, fft2, fftn
 import logging
 import nn_keras as nnk
-import extreme_learning_machine as elm
+import extreme_learning_machine as olga_elm
+import elm as standard_elm
 import plotting
 import os
 
@@ -12,6 +13,7 @@ def timer(start, end, label):
     hours, rem = divmod(end - start, 3600)
     minutes, seconds = divmod(rem, 60)
     logging.info("{:0>2}:{:05.2f} \t {}".format(int(minutes), seconds, label))
+    return "{:0>2}:{:05.2f}".format(int(minutes), seconds)
 
 
 def pdf_from_array_with_x(array, bins, range):
@@ -335,13 +337,21 @@ def final_transform(X, y, n_features, dimension, train=False):
         
         return X_test, y_test
 
-
+def save_results(plot_folder, predictions, true, mse):
+    header = "sigma=0.9, sigma=1.0, sigma=1.1"
+    prediction_file = os.path.join(plot_folder, 'y_predictions.txt')
+    true_file = os.path.join(plot_folder, 'y_actual.txt')
+    mse_file = os.path.join(plot_folder, 'mse.txt')
+    np.savetxt(prediction_file, predictions, header=header)
+    np.savetxt(true_file, true, header=header)
+    np.savetxt(mse_file, mse, header=header)
 
 def run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final,
             num_features, num_epochs, num_neurons_L1, num_neurons_L2, base_plot_folder, 
             X_test, y_test, dimension):
     predictions = []
     mse = []
+    training_time = []
     if dimension == 2:
         untransform = untransform_y
         shape = [256, 256]
@@ -351,69 +361,116 @@ def run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final
     if model_type == 'FF_1L':
         for epochs in num_epochs:
             for neurons in num_neurons_L1:
-                logging.info('Evaluating model {} for {} features, {} epochs, and {} neurons'.format(model_type, str(num_features), str(epochs), str(neurons)))
+                logging.info('Evaluating model {} for {} features, {} epochs, and {} neurons'.format(model_type, num_features, epochs, neurons))
     
                 # Create folder for plots
                 plot_folder = base_plot_folder
-                plot_folder = os.path.join(plot_folder, '{}neurons_{}epochs'.format(str(neurons), str(epochs)))
+                plot_folder = os.path.join(plot_folder, '{}neurons_{}epochs'.format(neurons, epochs))
                 if not os.path.isdir(plot_folder):
                     os.makedirs(plot_folder)
-    
+
+                # Initialize model
                 model = nnk.my_keras(epochs, neurons, num_features)
     
                 # Evaluate model, validating on same test set key as trained on
                 model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder)
 
+                # Record training time for each model
+                training_time.append("{}epochs {}neurons: {}".format(epochs, neurons, model.training_time))
+
                 # Predict on each of the test sets and plot MSE:
                 # MSE plotting currently not working
                 model.evaluate_test_sets(X_test_final, y_test_final)
 
-                untransformed_predictions = untransform(model.predictions, shape)
+                # print(model.predictions.shape, type(model.predictions))
+                untransformed_predictions = []
+                for p in model.predictions:
+                    untransformed_predictions.append(untransform(p, shape))
                 plotting.plot_velocities_and_spectra(X_test, y_test, untransformed_predictions, plot_folder)
                 predictions.append(model.predictions)
                 mse.append(model.mse)
-        
+
+                save_results(plot_folder, model.predictions, model.true, model.mse)
+
+        # Write training times to files
+        training_file = os.path.join(base_plot_folder, "training_time.txt")
+        with open(training_file, "w+") as f:
+            for time in training_time:
+                f.write(time + '\n')
         return predictions, mse
 
     elif model_type == 'FF_2L':
         for epochs in num_epochs:
             for neurons in num_neurons_L1:
                 for neurons2 in num_neurons_L2:
-                    logging.info('Evaluating model {} for {} features, {} epochs, and {} neurons'.format(model_type, str(features), str(epochs), str(neurons)))
+                    logging.info('Evaluating model {} for {} features, {} epochs, and {}x{} neurons'.format(model_type, num_features, epochs, neurons, neurons2))
         
                     # Create folder for plots
                     plot_folder = base_plot_folder
-                    plot_folder = os.path.join(plot_folder, '{}_neurons'.format(str(neurons)),
-                                                            '{}_epochs'.format(str(epochs)))
+                    plot_folder = os.path.join(plot_folder, '{}_{}neurons_{}epochs'.format(neurons, neurons2, epochs))
                     if not os.path.isdir(plot_folder):
                         os.makedirs(plot_folder)
-        
+
+                    # Initialize model
                     model = nnk.my_keras(epochs, neurons, num_features, neurons2)
         
                     # Evaluate model, validating on same test set key as trained on
                     model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder, two_layer=True)
 
+                    # Record training time for each model
+                    training_time.append("{}epochs {}x{}neurons: {}".format(epochs, neurons, neurons2, model.training_time))
+
                     # Predict on each of the test sets and plot MSE:
                     # MSE plotting currently not working
                     model.evaluate_test_sets(X_test_final, y_test_final)
         
-                    plotting.plot_velocities_and_spectra(X_test, y_test, model.predictions, plot_folder)
+                    untransformed_predictions = []
+                    for p in model.predictions:
+                        untransformed_predictions.append(untransform(p, shape))
+                    plotting.plot_velocities_and_spectra(X_test, y_test, untransformed_predictions, plot_folder)
+                    predictions.append(model.predictions)
+                    mse.append(model.mse)
+
+                    save_results(plot_folder, model.predictions, model.true, model.mse)
+
+        # Write training times to files
+        training_file = os.path.join(base_plot_folder, "training_time.txt")
+        with open(training_file, "w+") as f:
+            for time in training_time:
+                f.write(time + '\n')
+        return predictions, mse
 
     elif model_type == 'Olga_ELM':
-        # TODO
         for neurons in num_neurons_L1:
-            logging.info('Evaluating model {} for {} features and {} neurons'.format(model_type, str(features), str(neurons)))
+            logging.info('Evaluating model {} for {} features and {} neurons'.format(model_type, num_features, neurons))
 
             # Create folder for plots
-            plot_folder = plot_folder
+            plot_folder = base_plot_folder
             plot_folder = os.path.join(plot_folder, '{}_neurons'.format(str(neurons)))
-
             if not os.path.isdir(plot_folder):
                 os.makedirs(plot_folder)
             
-            model = elm.Olga_ELM(neurons, num_features)
+            # Initialize model
+            model = olga_elm.Olga_ELM(neurons, num_features)
 
-    elif model_type == 'Rahul_ELM':
-        # TODO
-        pass
-    
+            # Train and test model
+            model.extreme_learning_machine(X_train_final, y_train_final, X_test_final, y_test_final)
+
+            # Record training time for each model
+            training_time.append("{}neurons: {}".format(neurons, model.training_time))
+
+            untransformed_predictions = []
+            for p in model.predictions:
+                untransformed_predictions.append(untransform(p, shape))
+            plotting.plot_velocities_and_spectra(X_test, y_test, untransformed_predictions, plot_folder)
+            predictions.append(model.predictions)
+            mse.append(model.mse)
+
+            save_results(plot_folder, model.predictions, model.true, model.mse)
+
+        # Write training times to files
+        training_file = os.path.join(base_plot_folder, "training_time.txt")
+        with open(training_file, "w+") as f:
+            for time in training_time:
+                f.write(time + '\n')
+        return predictions, mse

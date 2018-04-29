@@ -3,10 +3,12 @@ import logging
 import scipy.ndimage as ndimage
 import plotting
 import utils
+import filters
+import os
 
 
 data_folder = '../data/'
-plot_folder = './plots/'
+# plot_folder = './plots/'
 filename_npz = data_folder + 'isotropic2048.npz'
 filename_3d_u = data_folder + 'HIT_u.bin'
 filename_3d_v = data_folder + 'HIT_v.bin'
@@ -62,17 +64,44 @@ def load_data(dimension=2):
     return velocity
 
 
-def example_of_data(velocity, Npoints_coarse=256):
+def example_of_data(velocity, Npoints_coarse=256, plot_folder='./plots/'):
 
     logging.info('Example of Coarse data')
-    # dx_fine = np.divide([np.pi, np.pi], [velocity['u'].shape[0], Npoints_fine])
-    # dx_coarse = np.divide([np.pi, np.pi], [256, 256])
-    vel_coarse = utils.sparse_dict(velocity, Npoints_coarse, 0)
+    dimension = len(velocity['u'].shape)
+    if dimension == 3:
+        k_cutoff = 4
+    else:
+        k_cutoff = 15
+    # utils.spectral_density(velocity, plot_folder+'fine_grid')
+    plot_folder = os.path.join(plot_folder, 'spectra_{}D/'.format(dimension))
+    if not os.path.isdir(plot_folder):
+        os.makedirs(plot_folder)
 
-    logging.info('Example of data filtering')
+    vel_coarse = utils.sparse_dict(velocity, Npoints_coarse, 0)
+    utils.spectral_density(vel_coarse, plot_folder+'coarse_grid')
+
+    logging.info('Data filtering')
     vel_filtered = dict()
+
+    logging.info('Gaussian')
     for key, value in vel_coarse.items():
-        vel_filtered[key] = ndimage.gaussian_filter(value, sigma=1)
+        vel_filtered[key] = ndimage.gaussian_filter(value, sigma=1,  mode='wrap', truncate=500)
+    utils.spectral_density(vel_filtered, os.path.join(plot_folder, 'gaussian'))
+    logging.info('Noise')
+    for key, value in vel_coarse.items():
+        kappa = np.random.normal(0, 1, size=value.shape)
+        vel_filtered[key] = value + 0.2 * kappa
+    utils.spectral_density(vel_filtered,os.path.join(plot_folder, 'noise'))
+    logging.info('Sharp in Fourier space')
+    vel_filtered = filters.filter_sharp(vel_coarse, filter_type='fourier_sharp', scale_k=k_cutoff)
+    utils.spectral_density(vel_filtered, os.path.join(plot_folder, 'fourier_sharp'))
+    logging.info('Sharp in Physical space')
+    vel_filtered = filters.filter_sharp(vel_coarse, filter_type='physical_sharp', scale_k=k_cutoff)
+    utils.spectral_density(vel_filtered, os.path.join(plot_folder, 'physical_sharp'))
+    logging.info('Median')
+    for key, value in vel_coarse.items():
+        vel_filtered[key] = ndimage.median_filter(value, size=4,  mode='wrap')
+    utils.spectral_density(vel_filtered, os.path.join(plot_folder, 'median'))
 
     logging.info('Plot data')
     # plotting.imagesc([vel_coarse['u'], vel_filtered['u']], ['true', 'filtered'], plot_folder + 'data')
@@ -82,11 +111,9 @@ def example_of_data(velocity, Npoints_coarse=256):
     # plotting.imagesc([vel_filtered['u'], vel_filtered['v'], vel_filtered['w']], ['R', 'G', 'B'],
     # plot_folder + 'gaussian filter')
     # [r'$\widetilde{u}$', r'$\widetilde{v}$', r'$\widetilde{w}$']
-    # logging.info('Calculating spectra')
-    utils.spectral_density(velocity, plot_folder+'fine_grid')
-    utils.spectral_density(vel_coarse, plot_folder+'coarse_grid')
-    utils.spectral_density(vel_filtered, plot_folder+'filtered')
-    plotting.spectra(plot_folder, plot_folder+'spectra', '')
+
+    logging.info('Plot spectra')
+    plotting.spectra(plot_folder, os.path.join(plot_folder, 'spectra_{}D'.format(dimension)), '')
 
 
 def form_train_test_sets(velocity, Npoints_coarse=256, filter_type='gaussian'):
@@ -119,30 +146,37 @@ def form_train_test_sets(velocity, Npoints_coarse=256, filter_type='gaussian'):
     filtered_test = [dict(), dict(), dict()]
 
     if filter_type == 'gaussian':
-        for key, value in data_train.items():
-            filtered_train[key] = ndimage.gaussian_filter(value, sigma=1,  mode='wrap', truncate=500)
         sigma = [1, 1.1, 0.9]
+        for key, value in data_train.items():
+            filtered_train[key] = ndimage.gaussian_filter(value, sigma=sigma[0],  mode='wrap', truncate=500)
         for i in range(3):
             for key, value in data_test[i].items():
                 filtered_test[i][key] = ndimage.gaussian_filter(value, sigma=sigma[i], mode='wrap', truncate=500)
 
     elif filter_type == 'median':
+        s = [4, 5, 3]
         for key, value in data_train.items():
-            filtered_train[key] = ndimage.median_filter(value, size=5,  mode='wrap')
-        s = [5, 13, 7]
+            filtered_train[key] = ndimage.median_filter(value, size=s[0],  mode='wrap')
         for i in range(3):
             for key, value in data_test[i].items():
                 filtered_test[i][key] = ndimage.median_filter(value, size=s[i], mode='wrap')
 
     elif filter_type == 'noise':
+        mu = [0.2, 0.22, 0.18]
         for key, value in data_train.items():
             kappa = np.random.normal(0, 1, size=value.shape)
-            filtered_train[key] = value + 0.2*kappa
-        mu = [0.2, 0.22, 0.18]
+            filtered_train[key] = value + mu[0]*kappa
         for i in range(3):
             for key, value in data_test[i].items():
                 kappa = np.random.normal(0, 1, size=value.shape)
                 filtered_test[i][key] = value + mu[i]*kappa
+
+    elif filter_type == 'fourier_sharp' or filter_type == 'physical_sharp':
+        k = [4, 5, 3]
+        filtered_train = filters.filter_sharp(data_train, filter_type=filter_type, scale_k=k[0])
+        for i in range(3):
+            filtered_test[i] = filters.filter_sharp(data_train, filter_type=filter_type, scale_k=k[i])
+
     else:
         logging.error('Filter type is not defined.')
 

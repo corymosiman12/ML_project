@@ -81,24 +81,27 @@ def spectra(folder, fname, ind):
     fig = plt.figure(figsize=(4, 3))
     ax = plt.gca()
     if ind == '':
-        files = ['fine_grid.spectra', 'coarse_grid.spectra', 'filtered.spectra']
-        labels = ['fine grid', 'coarse grid', 'filtered']
+        files = ['coarse_grid.spectra', 'gaussian.spectra', 'median.spectra', 'noise.spectra', 'fourier_sharp.spectra',
+                 'physical_sharp.spectra']
+        labels = ['true data', 'gaussian', 'median', 'noise', 'fourier sharp', 'physical sharp']
+        width = 1.5*np.ones(len(files))
+        width[0] = 3
     else:
         files = ['predicted' + ind + '.spectra', 'filtered' + ind + '.spectra', 'true' + ind + '.spectra']
         labels = ['predicted', 'filtered', 'true']
-
+        width = [2, 2, 2]
     for k in range(len(files)):
         f = open(os.path.join(folder, files[k]), 'r')
         data = np.array(f.readlines()).astype(np.float)
         x = np.arange(len(data))
-        ax.loglog(x, data, '-', linewidth=2, label=labels[k])
+        ax.loglog(x, data, '-', linewidth=width[k], label=labels[k])
 
     # y = 1e9 * np.power(x[1:], -5./3)
     # ax.loglog(x[1:], y, 'r--', label=r'$-5/3$ slope')
     ax.set_title('Spectra')
     ax.set_ylabel(r'$E$')
     ax.set_xlabel(r'k')
-    # ax.axis(ymin=1e2)
+    ax.axis(ymin=1e-2)
     plt.legend(loc=0)
 
     fig.subplots_adjust(left=0.16, right=0.95, bottom=0.2, top=0.87)
@@ -109,41 +112,42 @@ def spectra(folder, fname, ind):
 def plot_tau(x_test, y_test, y_predict, plot_folder):
     """Plot Reynolds stresses tau fields and pdf."""
 
-    sigma = [1, 1.1, 0.9]
-    logging.info('Plot tau')
-    for test_example in range(3):
-        tau = dict()
-        tau_true = dict()
-        for u_i in ['u', 'v', 'w']:
-            for u_j in ['u', 'v', 'w']:
-                tmp = y_predict[test_example][u_i]*y_predict[test_example][u_j]
-                tmp = ndimage.gaussian_filter(tmp, sigma=sigma[test_example], mode='wrap', truncate=500)
-                tau[u_i+u_j] = x_test[test_example][u_i]*x_test[test_example][u_j] - tmp
-                tmp = y_test[test_example][u_i]*y_test[test_example][u_j]
-                tmp = ndimage.gaussian_filter(tmp, sigma=sigma[test_example], mode='wrap', truncate=500)
-                tau_true[u_i + u_j] = x_test[test_example][u_i] * x_test[test_example][u_j] - tmp
+    if len(y_test[0]['u'].shape)==3:
+        sigma = [1, 1.1, 0.9]
+        logging.info('Plot tau')
+        for test_example in range(3):
+            tau = dict()
+            tau_true = dict()
+            for u_i in ['u', 'v', 'w']:
+                for u_j in ['u', 'v', 'w']:
+                    tmp = y_predict[test_example][u_i]*y_predict[test_example][u_j]
+                    tmp = ndimage.gaussian_filter(tmp, sigma=sigma[test_example], mode='wrap', truncate=500)
+                    tau[u_i+u_j] = x_test[test_example][u_i]*x_test[test_example][u_j] - tmp
+                    tmp = y_test[test_example][u_i]*y_test[test_example][u_j]
+                    tmp = ndimage.gaussian_filter(tmp, sigma=sigma[test_example], mode='wrap', truncate=500)
+                    tau_true[u_i + u_j] = x_test[test_example][u_i] * x_test[test_example][u_j] - tmp
 
-        imagesc([tau_true['uu'][:, :, 32], tau_true['uv'][:, :, 32], tau_true['uw'][:, :, 32]],
-                titles=[r'$\tau^{true}_{11}$', r'$\tau^{true}_{12}$', r'$\tau^{true}_{12}$'],
-                name=os.path.join(plot_folder, 'tau_true{}'.format(test_example)), limits=[-0.07, 0.07])
-        imagesc([tau['uu'][:, :, 32], tau['uv'][:, :, 32], tau['uw'][:, :, 32]],
-                titles=[r'$\tau_{11}$', r'$\tau_{12}$', r'$\tau_{12}$'],
-                name=os.path.join(plot_folder, 'tau{}'.format(test_example)), limits=[-0.07, 0.07])
+            imagesc([tau_true['uu'][:, :, 32], tau_true['uv'][:, :, 32], tau_true['uw'][:, :, 32]],
+                    titles=[r'$\tau^{true}_{11}$', r'$\tau^{true}_{12}$', r'$\tau^{true}_{12}$'],
+                    name=os.path.join(plot_folder, 'tau_true{}'.format(test_example)), limits=[-0.07, 0.07])
+            imagesc([tau['uu'][:, :, 32], tau['uv'][:, :, 32], tau['uw'][:, :, 32]],
+                    titles=[r'$\tau_{11}$', r'$\tau_{12}$', r'$\tau_{12}$'],
+                    name=os.path.join(plot_folder, 'tau{}'.format(test_example)), limits=[-0.07, 0.07])
 
-        fig, axarr = plt.subplots(nrows=1, ncols=3, sharex=True, sharey=True, figsize=(6.5, 2.4))
-        for ind, key in enumerate(['uu', 'uv', 'uw']):
-            x, y = utils.pdf_from_array_with_x(tau_true[key], bins=100, range=[-0.1, 0.1])
-            axarr[ind].semilogy(x, y, label='true')
-            x, y = utils.pdf_from_array_with_x(tau[key], bins=100, range=[-0.1, 0.1])
-            axarr[ind].semilogy(x, y, label='modeled')
-        axarr[0].axis(xmin=-0.1, xmax=0.1, ymin=1e-3)
-        axarr[0].set_ylabel('pdf')
-        axarr[0].set_yscale('log')
-        plt.legend(loc=0)
-        fig.subplots_adjust(left=0.1, right=0.95, wspace=0.15, bottom=0.2, top=0.9)
-        fig.savefig(os.path.join(plot_folder, 'tau_pdf{}'.format(test_example)))
-        del fig, axarr
-        gc.collect()
+            fig, axarr = plt.subplots(nrows=1, ncols=3, sharex=True, sharey=True, figsize=(6.5, 2.4))
+            for ind, key in enumerate(['uu', 'uv', 'uw']):
+                x, y = utils.pdf_from_array_with_x(tau_true[key], bins=100, range=[-0.1, 0.1])
+                axarr[ind].semilogy(x, y, label='true')
+                x, y = utils.pdf_from_array_with_x(tau[key], bins=100, range=[-0.1, 0.1])
+                axarr[ind].semilogy(x, y, label='modeled')
+            axarr[0].axis(xmin=-0.1, xmax=0.1, ymin=1e-3)
+            axarr[0].set_ylabel('pdf')
+            axarr[0].set_yscale('log')
+            plt.legend(loc=0)
+            fig.subplots_adjust(left=0.1, right=0.95, wspace=0.15, bottom=0.2, top=0.9)
+            fig.savefig(os.path.join(plot_folder, 'tau_pdf{}'.format(test_example)))
+            del fig, axarr
+            gc.collect()
 
 
 def plot_vorticity_pdf(x_test, y_test, y_predict, plot_folder):

@@ -342,9 +342,17 @@ def save_results(plot_folder, predictions, true, mse):
     prediction_file = os.path.join(plot_folder, 'y_predictions.txt')
     true_file = os.path.join(plot_folder, 'y_actual.txt')
     mse_file = os.path.join(plot_folder, 'mse.txt')
-    np.savetxt(prediction_file, predictions, header=header)
-    np.savetxt(true_file, true, header=header)
+    # np.savetxt(prediction_file, predictions, header=header)
+    # np.savetxt(true_file, true, header=header)
     np.savetxt(mse_file, mse, header=header)
+
+def save_loss_per_epoch(plot_folder, train_loss, val_loss):
+    header = "train_loss, val_loss"
+    train_loss_array = np.array(train_loss)
+    val_loss_array = np.array(val_loss)
+    final = np.column_stack((train_loss_array, val_loss_array))
+    epoch_file = os.path.join(plot_folder, "loss_per_epoch.txt")
+    np.savetxt(epoch_file, final, header=header)
 
 def run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final,
             num_features, num_epochs, num_neurons_L1, num_neurons_L2, base_plot_folder, 

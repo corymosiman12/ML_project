@@ -61,8 +61,8 @@ class my_keras():
         start_training = time()
         self.estimator_trained = self.estimator.fit(X_train, y_train, validation_data = (X_validation, y_validation))
         end_training = time()
+        utils.save_loss_per_epoch(plot_folder, self.estimator_trained.history["loss"], self.estimator_trained.history["val_loss"])
         self.training_time = utils.timer(start_training, end_training, 'Training time')
-        # logging.info("Train loss: {} Val loss: {}".format(self.estimator_trained.history['loss'], self.estimator_trained.history['val_loss']))
         self.plot_loss_per_epoch(plot_folder, two_layer)
 
     def plot_loss_per_epoch(self, plot_folder, two_layer):

@@ -41,22 +41,36 @@ def main():
     Olga_ELM:   num_epochs = None, num_neurons_L2 = None
     Rahul_ELM:  num_epochs = None, num_neurons_L2 = None
     """
+<<<<<<< HEAD
     num_features = 27 # pass as single integer
     num_epochs = [150] # pass as list to iterate through
     # num_neurons_L1 = [10]
     num_neurons_L1 = [10, 30, 50, 70, 90, 110, 130, 150] # pass as list to iterate through
     num_neurons_L2 = [5, 6] # pass as list to iterate through or None
+=======
+    num_features = 27    # pass as single integer
+    # num_epochs = [1, 10, 15] # pass as list to iterate through or None
+    num_epochs = [2, 3]
+    num_neurons_L1 = [100]
+    # num_neurons_L1 = [50, 100, 150]   # pass as list to iterate through
+    # num_neurons_L1 = [15, 21]
+    num_neurons_L2 = [5, 6]     # pass as list to iterate through or None
+    # optimizer =
+>>>>>>> df7821bd46d83c9e52bcf552b11fb1a7e026e1c7
 
-    ########################## FORMAT TRAINING AND TESTING ##########################    
+    ########################## FORMAT TRAINING AND TESTING ##########################
     # Select number of dimensions to use for analysis: 2 or 3
-    dimension = 2
+    dimension = 3
     assert dimension == 2 or dimension == 3, 'Incorrect number of dimensions: %r' % dimension
 
     # Select filter type to use: gaussian, median, or noise
-    filter_type = "gaussian"
+    filter_type = "physical_sharp"
     assert filter_type == "gaussian" \
         or filter_type == "median" \
-        or filter_type == "noise", 'Incorrect filter type: %r' % filter_type
+        or filter_type == "noise" \
+        or (filter_type == "fourier_sharp" and dimension == 3) \
+        or (filter_type == "physical_sharp" and dimension == 3), \
+        'Incorrect filter type: %r' % filter_type
 
     # Define arguments based on required dimensions
     if dimension == 2:
@@ -65,9 +79,9 @@ def main():
         Npoints_coarse = Npoints_coarse3D
 
     # Update plot folder with model, dimensions, filter_type, num_features
-    plot_folder = os.path.join(plot_folder, "{}".format(model_type), 
-                                            "{}dim_{}_{}feat".format(str(dimension), 
-                                                                    filter_type, 
+    plot_folder = os.path.join(plot_folder, "{}".format(model_type),
+                                            "{}dim_{}_{}feat".format(str(dimension),
+                                                                    filter_type,
                                                                     str(num_features)))
     if not os.path.isdir(plot_folder):
         os.makedirs(plot_folder)
@@ -77,21 +91,21 @@ def main():
 
     # Form train and test sets. Below just applies filter, keeping it in shapes of [256, 256] or [64, 64, 64]
     X_train, y_train, X_test, y_test = data.form_train_test_sets(velocity, Npoints_coarse=Npoints_coarse, filter_type=filter_type)
-    
+
     # Reshape training into arrays of observations (rows) and features (columns)
     # Observations are of all components of velocity (u, v, and w)
-    X_train_final, y_train_final = utils.final_transform(X_train, y_train, n_features=num_features, 
+    X_train_final, y_train_final = utils.final_transform(X_train, y_train, n_features=num_features,
                                                         dimension=dimension, train=True)
 
-    # Reshape testing into list based on sigma [0.9, 1, 1.1] of arrays 
+    # Reshape testing into list based on sigma [0.9, 1, 1.1] of arrays
     # of observations (rows) and features (columns)
     # Observations are of all components of velocity (u, v, and w)
-    X_test_final, y_test_final = utils.final_transform(X_test, y_test, n_features=num_features, 
+    X_test_final, y_test_final = utils.final_transform(X_test, y_test, n_features=num_features,
                                                         dimension=dimension)
 
-    ########################## RUN MODEL ##########################  
+    ########################## RUN MODEL ##########################
     predictions, mse = utils.run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final,
-                                    num_features, num_epochs, num_neurons_L1, num_neurons_L2, plot_folder, 
+                                    num_features, num_epochs, num_neurons_L1, num_neurons_L2, plot_folder,
                                     X_test, y_test, dimension)
 
 
@@ -99,7 +113,7 @@ if __name__ == '__main__':
     main()
 
 
-########################## NOTES ##########################  
+########################## NOTES ##########################
     """
     X_test_final and y_test_final are both lists of dictionaries:
         X_test_final[0]: Filter applied with sigma = 1

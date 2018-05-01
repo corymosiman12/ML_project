@@ -29,7 +29,7 @@ def main():
     # FF_1L = Feed forward single layer with keras
     # FF_2L = Feed forward two layer with keras
     # Olga_ELM = Extreme learning machine created by Olga
-    model_type = 'Olga_ELM'
+    model_type = 'FF_1L'
     assert model_type == 'FF_1L' \
         or model_type == 'FF_2L' \
         or model_type == 'Olga_ELM', 'Incorrect model_type: %r' % model_type
@@ -41,6 +41,13 @@ def main():
     Olga_ELM:   num_epochs = None, num_neurons_L2 = None
     Rahul_ELM:  num_epochs = None, num_neurons_L2 = None
     """
+<<<<<<< HEAD
+    num_features = 27 # pass as single integer
+    num_epochs = [150] # pass as list to iterate through
+    # num_neurons_L1 = [10]
+    num_neurons_L1 = [10, 30, 50, 70, 90, 110, 130, 150] # pass as list to iterate through
+    num_neurons_L2 = [5, 6] # pass as list to iterate through or None
+=======
     num_features = 27    # pass as single integer
     # num_epochs = [1, 10, 15] # pass as list to iterate through or None
     num_epochs = [2, 3]
@@ -49,6 +56,7 @@ def main():
     # num_neurons_L1 = [15, 21]
     num_neurons_L2 = [5, 6]     # pass as list to iterate through or None
     # optimizer =
+>>>>>>> df7821bd46d83c9e52bcf552b11fb1a7e026e1c7
 
     ########################## FORMAT TRAINING AND TESTING ##########################
     # Select number of dimensions to use for analysis: 2 or 3

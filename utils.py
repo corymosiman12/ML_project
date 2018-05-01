@@ -4,7 +4,7 @@ from numpy.fft import fftfreq, fft2, fftn
 import logging
 import nn_keras as nnk
 import extreme_learning_machine as olga_elm
-import elm as standard_elm
+# import elm as standard_elm
 import plotting
 import os
 
@@ -79,9 +79,9 @@ def spectral_density(vel_dict, fname):
             fft_array = fftn(array)
             spectrum += np.real(fft_array * np.conj(fft_array))
 
-    logging.debug('done transform')
+    # logging.debug('done transform')
     x, y = shell_average(spectrum, N_points, k)
-    logging.debug('done shell average')
+    # logging.debug('done shell average')
 
     fh = open(fname + '.spectra', 'w')
     fh.writelines(["%s\n" % item for item in y])
@@ -343,6 +343,8 @@ def save_results(plot_folder, predictions, true, mse):
     true_file = os.path.join(plot_folder, 'y_actual.txt')
     mse_file = os.path.join(plot_folder, 'mse.txt')
     np.savetxt(prediction_file, predictions, header=header)
+    for i in range(len(true)):
+        true[i] = true[i].flatten()
     np.savetxt(true_file, true, header=header)
     np.savetxt(mse_file, mse, header=header)
 

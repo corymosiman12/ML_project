@@ -9,6 +9,9 @@ import os
 import nn_keras as nnk
 
 def main():
+
+    np.random.seed(1234)
+
     # Define base variables
     Npoints_coarse2D = 256
     Npoints_coarse3D = 64
@@ -29,7 +32,7 @@ def main():
     # FF_1L = Feed forward single layer with keras
     # FF_2L = Feed forward two layer with keras
     # Olga_ELM = Extreme learning machine created by Olga
-    model_type = 'FF_1L'
+    model_type = 'Olga_ELM'
     assert model_type == 'FF_1L' \
         or model_type == 'FF_2L' \
         or model_type == 'Olga_ELM', 'Incorrect model_type: %r' % model_type
@@ -41,35 +44,29 @@ def main():
     Olga_ELM:   num_epochs = None, num_neurons_L2 = None
     Rahul_ELM:  num_epochs = None, num_neurons_L2 = None
     """
-<<<<<<< HEAD
-    num_features = 27 # pass as single integer
-    num_epochs = [150] # pass as list to iterate through
-    # num_neurons_L1 = [10]
-    num_neurons_L1 = [10, 30, 50, 70, 90, 110, 130, 150] # pass as list to iterate through
-    num_neurons_L2 = [5, 6] # pass as list to iterate through or None
-=======
     num_features = 27    # pass as single integer
+    assert num_features == 9 or num_features == 27, 'Incorrect number of features: %r' % num_features
     # num_epochs = [1, 10, 15] # pass as list to iterate through or None
-    num_epochs = [2, 3]
-    num_neurons_L1 = [100]
-    # num_neurons_L1 = [50, 100, 150]   # pass as list to iterate through
+    num_epochs = [2]
+    # num_neurons_L1 = [5]
+    num_neurons_L1 = list(np.arange(20, 210, 10))   # pass as list to iterate through
     # num_neurons_L1 = [15, 21]
     num_neurons_L2 = [5, 6]     # pass as list to iterate through or None
     # optimizer =
->>>>>>> df7821bd46d83c9e52bcf552b11fb1a7e026e1c7
 
     ########################## FORMAT TRAINING AND TESTING ##########################
     # Select number of dimensions to use for analysis: 2 or 3
     dimension = 3
     assert dimension == 2 or dimension == 3, 'Incorrect number of dimensions: %r' % dimension
-
+    if dimension == 3:
+        assert num_features == 27, 'Incorrect number of features for 3D: %r' % num_features
     # Select filter type to use: gaussian, median, or noise
     filter_type = "physical_sharp"
     assert filter_type == "gaussian" \
         or filter_type == "median" \
         or filter_type == "noise" \
-        or (filter_type == "fourier_sharp" and dimension == 3) \
-        or (filter_type == "physical_sharp" and dimension == 3), \
+        or filter_type == "fourier_sharp" \
+        or filter_type == "physical_sharp", \
         'Incorrect filter type: %r' % filter_type
 
     # Define arguments based on required dimensions
@@ -80,9 +77,7 @@ def main():
 
     # Update plot folder with model, dimensions, filter_type, num_features
     plot_folder = os.path.join(plot_folder, "{}".format(model_type),
-                                            "{}dim_{}_{}feat".format(str(dimension),
-                                                                    filter_type,
-                                                                    str(num_features)))
+                               "{}dim_{}_{}feat".format(str(dimension), filter_type, str(num_features)))
     if not os.path.isdir(plot_folder):
         os.makedirs(plot_folder)
 

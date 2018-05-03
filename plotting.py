@@ -36,7 +36,7 @@ plt.rcParams['axes.linewidth'] = 1
 
 
 def imagesc(Arrays, titles, name=None, limits=None):
-    axis = [0, np.pi, 0, np.pi]
+    axis = [0, np.pi/8, 0, np.pi/8]
 
     cmap = plt.cm.jet  # define the colormap
     # cmap = plt.cm.binary
@@ -55,20 +55,23 @@ def imagesc(Arrays, titles, name=None, limits=None):
             ax.set_title(titles[k])
             ax.set_adjustable('box-forced')
             ax.set_xlabel(r'$x$')
-            ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
-            ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
+            ax.xaxis.set_major_locator(ticker.MultipleLocator(0.1))
+            ax.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
             k += 1
         axes[0].set_ylabel(r'$y$')
         cbar_ax = fig.add_axes([0.89, 0.18, 0.017, 0.68])  # ([0.85, 0.15, 0.05, 0.68])
         fig.subplots_adjust(left=0.07, right=0.87, wspace=0.1, bottom=0.05, top=0.98)
         fig.colorbar(im, cax=cbar_ax, ax=axes.ravel().tolist())
     else:
-        fig = plt.figure(figsize=(6.5, 5))
+        axis = [0, np.pi / 8, 0, np.pi / 8]
+        fig = plt.figure(figsize=(5, 4))
         ax = plt.gca()
-        im = ax.imshow(Arrays[0].T, origin='lower', cmap=cmap, interpolation="nearest")
+        ax.set_xlabel(r'$x$')
+        ax.set_ylabel(r'$y$')
+        ax.set_title(titles[0])
+        im = ax.imshow(Arrays[0].T, origin='lower', cmap=cmap, interpolation="nearest", extent=axis)
         plt.colorbar(im, fraction=0.05, pad=0.04)
     if name:
-        # pickle.dump(ax, open(self.folder + name, 'wb'))
         fig.savefig(name)
     del ax, im, fig, cmap
     gc.collect()
@@ -81,9 +84,8 @@ def spectra(folder, fname, ind):
     fig = plt.figure(figsize=(4, 3))
     ax = plt.gca()
     if ind == '':
-        files = ['coarse_grid.spectra', 'gaussian.spectra', 'median.spectra', 'noise.spectra', 'fourier_sharp.spectra',
-                 'physical_sharp.spectra']
-        labels = ['true data', 'gaussian', 'median', 'noise', 'fourier sharp', 'physical sharp']
+        files = ['coarse_grid.spectra', 'gaussian.spectra', 'median.spectra', 'noise.spectra', 'physical_sharp.spectra']  #, 'fourier_sharp.spectra', ]
+        labels = ['true data', 'gaussian', 'median', 'noise', 'physical sharp']   #, 'fourier sharp',]
         width = 1.5*np.ones(len(files))
         width[0] = 3
     else:

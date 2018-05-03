@@ -84,33 +84,40 @@ def example_of_data(velocity, Npoints_coarse=256, plot_folder='./plots/'):
     vel_filtered = dict()
 
     logging.info('Gaussian')
+    vel_gaussian = dict()
     for key, value in vel_coarse.items():
-        vel_filtered[key] = ndimage.gaussian_filter(value, sigma=1,  mode='wrap', truncate=500)
-    utils.spectral_density(vel_filtered, os.path.join(plot_folder, 'gaussian'))
+        vel_gaussian[key] = ndimage.gaussian_filter(value, sigma=1,  mode='wrap', truncate=500)
+    utils.spectral_density(vel_gaussian, os.path.join(plot_folder, 'gaussian'))
+
     logging.info('Noise')
+    vel_noise = dict()
     for key, value in vel_coarse.items():
         kappa = np.random.normal(0, 1, size=value.shape)
-        vel_filtered[key] = value + 0.2 * kappa
-    utils.spectral_density(vel_filtered,os.path.join(plot_folder, 'noise'))
+        vel_noise[key] = value + 0.2 * kappa
+    utils.spectral_density(vel_noise, os.path.join(plot_folder, 'noise'))
+
     logging.info('Sharp in Fourier space')
     vel_filtered = filters.filter_sharp(vel_coarse, filter_type='fourier_sharp', scale_k=k_cutoff)
     utils.spectral_density(vel_filtered, os.path.join(plot_folder, 'fourier_sharp'))
     logging.info('Sharp in Physical space')
     vel_filtered = filters.filter_sharp(vel_coarse, filter_type='physical_sharp', scale_k=k_cutoff)
     utils.spectral_density(vel_filtered, os.path.join(plot_folder, 'physical_sharp'))
+
     logging.info('Median')
+    vel_median = dict()
     for key, value in vel_coarse.items():
-        vel_filtered[key] = ndimage.median_filter(value, size=4,  mode='wrap')
-    utils.spectral_density(vel_filtered, os.path.join(plot_folder, 'median'))
+        vel_median[key] = ndimage.median_filter(value, size=4,  mode='wrap')
+    utils.spectral_density(vel_median, os.path.join(plot_folder, 'median'))
 
-    logging.info('Plot data')
-    # plotting.imagesc([vel_coarse['u'], vel_filtered['u']], ['true', 'filtered'], plot_folder + 'data')
 
-    # plotting.imagesc([velocity['u'], velocity['v'], velocity['w']], [r'$u$', r'$v$', r'$w$'], plot_folder + 'fine_data')
-    # plotting.imagesc([vel_coarse['u'], vel_coarse['v'], vel_coarse['w']], [r'$u$', r'$v$', r'$w$'], plot_folder + 'coarse_data')
-    # plotting.imagesc([vel_filtered['u'], vel_filtered['v'], vel_filtered['w']], ['R', 'G', 'B'],
-    # plot_folder + 'gaussian filter')
-    # [r'$\widetilde{u}$', r'$\widetilde{v}$', r'$\widetilde{w}$']
+    # logging.info('Plot data')
+    # # plotting.imagesc([vel_gaussian['u'][:32, :32], vel_noise['u'][:32, :32], vel_median['u'][:32, :32]], ['gaussian', 'noise', 'median'], plot_folder + 'filters')
+    #
+    # # plotting.imagesc([velocity['u'], velocity['v'], velocity['w']], [r'$u$', r'$v$', r'$w$'], plot_folder + 'fine_data')
+    # plotting.imagesc([vel_coarse['u'][:32, :32]], [r'$u$'], plot_folder + 'true_data')
+    # # plotting.imagesc([vel_filtered['u'], vel_filtered['v'], vel_filtered['w']], ['R', 'G', 'B'],
+    # # plot_folder + 'gaussian filter')
+    # # [r'$\widetilde{u}$', r'$\widetilde{v}$', r'$\widetilde{w}$']
 
     logging.info('Plot spectra')
     plotting.spectra(plot_folder, os.path.join(plot_folder, 'spectra_{}D'.format(dimension)), '')
@@ -172,7 +179,10 @@ def form_train_test_sets(velocity, Npoints_coarse=256, filter_type='gaussian'):
                 filtered_test[i][key] = value + mu[i]*kappa
 
     elif filter_type == 'fourier_sharp' or filter_type == 'physical_sharp':
-        k = [4, 5, 3]
+        if dimension == 3:
+            k = [4, 5, 3]
+        else:
+            k = [15, 16, 14]
         filtered_train = filters.filter_sharp(data_train, filter_type=filter_type, scale_k=k[0])
         for i in range(3):
             filtered_test[i] = filters.filter_sharp(data_train, filter_type=filter_type, scale_k=k[i])

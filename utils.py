@@ -361,7 +361,7 @@ def save_loss_per_epoch(plot_folder, train_loss, val_loss):
 
 def run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final,
             num_features, num_epochs, num_neurons_L1, num_neurons_L2, base_plot_folder, 
-            X_test, y_test, dimension):
+            X_test, y_test, dimension, activation_function):
     predictions = []
     mse = []
     training_time = []
@@ -383,7 +383,7 @@ def run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final
                     os.makedirs(plot_folder)
 
                 # Initialize model
-                model = nnk.my_keras(epochs, neurons, num_features)
+                model = nnk.my_keras(epochs, neurons, num_features, activation_function)
     
                 # Evaluate model, validating on same test set key as trained on
                 model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder)
@@ -425,7 +425,7 @@ def run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final
                         os.makedirs(plot_folder)
 
                     # Initialize model
-                    model = nnk.my_keras(epochs, neurons, num_features, neurons2)
+                    model = nnk.my_keras(epochs, neurons, num_features, activation_function, neurons2)
         
                     # Evaluate model, validating on same test set key as trained on
                     model.evaluate_model(X_train_final, y_train_final, X_test_final[0], y_test_final[0], plot_folder, two_layer=True)

@@ -92,7 +92,7 @@ model_type = 'Olga_ELM'
 dimension = 2
 filter_type = ['gaussian', 'physical_sharp']
 num_features = [9, 27]
-neurons = np.arange(20, 210, 10)
+neurons = np.arange(20, 150, 20)
 
 assert model_type == 'FF_1L' \
     or model_type == 'FF_2L' \

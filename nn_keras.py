@@ -12,11 +12,12 @@ from time import time
 import utils
 
 class my_keras():
-    def __init__(self, num_epochs, num_neurons, num_inputs, num_neurons_L2 = None):
+    def __init__(self, num_epochs, num_neurons, num_inputs, activation_function, num_neurons_L2 = None):
         self.epochs = num_epochs
         self.num_neurons = num_neurons
         self.num_neurons_L2 = num_neurons_L2
         self.num_inputs = num_inputs
+        self.act_fun = activation_function
         self.predictions = []
         self.true = []
         self.mse = []
@@ -25,7 +26,7 @@ class my_keras():
     def baseline_model(self):
         # create model
         model = Sequential()
-        model.add(Dense(self.num_neurons, input_shape=(self.num_inputs,), kernel_initializer='normal', activation='relu'))
+        model.add(Dense(self.num_neurons, input_shape=(self.num_inputs,), kernel_initializer='normal', activation=self.act_fun))
         model.add(Dense(1, kernel_initializer='normal'))
 
         # compile model
@@ -37,8 +38,8 @@ class my_keras():
     def two_layer_model(self):
         # create model
         model = Sequential()
-        model.add(Dense(self.num_neurons, input_shape=(self.num_inputs,), kernel_initializer='normal', activation='relu'))
-        model.add(Dense(self.num_neurons_L2, kernel_initializer='normal', activation='relu'))
+        model.add(Dense(self.num_neurons, input_shape=(self.num_inputs,), kernel_initializer='normal', activation=self.act_fun))
+        model.add(Dense(self.num_neurons_L2, kernel_initializer='normal', activation=self.act_fun))
         model.add(Dense(1, kernel_initializer='normal'))
 
         # compile model

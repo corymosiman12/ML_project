@@ -32,7 +32,7 @@ def main():
     # FF_1L = Feed forward single layer with keras
     # FF_2L = Feed forward two layer with keras
     # Olga_ELM = Extreme learning machine created by Olga
-    model_type = 'Olga_ELM'
+    model_type = 'FF_1L'
     assert model_type == 'FF_1L' \
         or model_type == 'FF_2L' \
         or model_type == 'Olga_ELM', 'Incorrect model_type: %r' % model_type
@@ -47,21 +47,27 @@ def main():
     num_features = 27    # pass as single integer
     assert num_features == 9 or num_features == 27, 'Incorrect number of features: %r' % num_features
     # num_epochs = [1, 10, 15] # pass as list to iterate through or None
-    num_epochs = [2]
+    num_epochs = [50]
     # num_neurons_L1 = [5]
     num_neurons_L1 = list(np.arange(20, 210, 10))   # pass as list to iterate through
     # num_neurons_L1 = [15, 21]
     num_neurons_L2 = [5, 6]     # pass as list to iterate through or None
-    # optimizer =
 
+    # Define activation function to use for 'FF_1L' and 'FF_2L'
+    activation_function = 'tanh'
+    assert activation_function == 'relu' \
+        or activation_function == 'tanh' \
+        or activation_function == 'sigmoid', 'Incorrect activation function: %r' % num_features
+    if model_type == 'FF_1L' or model_type == 'FF_2L':
+        logging.info("Using {} activation function".format(activation_function))
     ########################## FORMAT TRAINING AND TESTING ##########################
     # Select number of dimensions to use for analysis: 2 or 3
-    dimension = 3
+    dimension = 2
     assert dimension == 2 or dimension == 3, 'Incorrect number of dimensions: %r' % dimension
     if dimension == 3:
         assert num_features == 27, 'Incorrect number of features for 3D: %r' % num_features
     # Select filter type to use: gaussian, median, or noise
-    filter_type = "physical_sharp"
+    filter_type = "noise"
     assert filter_type == "gaussian" \
         or filter_type == "median" \
         or filter_type == "noise" \
@@ -76,8 +82,12 @@ def main():
         Npoints_coarse = Npoints_coarse3D
 
     # Update plot folder with model, dimensions, filter_type, num_features
-    plot_folder = os.path.join(plot_folder, "{}".format(model_type),
-                               "{}dim_{}_{}feat".format(str(dimension), filter_type, str(num_features)))
+    if model_type == 'FF_1L' or model_type == 'FF_2L':
+        plot_folder = os.path.join(plot_folder, "{}".format(model_type),
+                        "{}dim_{}_{}feat_{}".format(dimension, filter_type, num_features, activation_function))
+    else:
+        plot_folder = os.path.join(plot_folder, "{}".format(model_type),
+                                "{}dim_{}_{}feat".format(dimension, filter_type, num_features))
     if not os.path.isdir(plot_folder):
         os.makedirs(plot_folder)
 
@@ -101,7 +111,7 @@ def main():
     ########################## RUN MODEL ##########################
     predictions, mse = utils.run_all(model_type, X_train_final, y_train_final, X_test_final, y_test_final,
                                     num_features, num_epochs, num_neurons_L1, num_neurons_L2, plot_folder,
-                                    X_test, y_test, dimension)
+                                    X_test, y_test, dimension, activation_function)
 
 
 if __name__ == '__main__':

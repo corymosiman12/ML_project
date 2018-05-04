@@ -49,7 +49,7 @@ def main():
     # num_epochs = [1, 10, 15] # pass as list to iterate through or None
     num_epochs = [50]
     # num_neurons_L1 = [5]
-    num_neurons_L1 = list(np.arange(20, 210, 10))   # pass as list to iterate through
+    num_neurons_L1 = list(np.arange(20, 210, 20))   # pass as list to iterate through
     # num_neurons_L1 = [15, 21]
     num_neurons_L2 = [5, 6]     # pass as list to iterate through or None
 
@@ -62,12 +62,12 @@ def main():
         logging.info("Using {} activation function".format(activation_function))
     ########################## FORMAT TRAINING AND TESTING ##########################
     # Select number of dimensions to use for analysis: 2 or 3
-    dimension = 2
+    dimension = 3
     assert dimension == 2 or dimension == 3, 'Incorrect number of dimensions: %r' % dimension
     if dimension == 3:
         assert num_features == 27, 'Incorrect number of features for 3D: %r' % num_features
     # Select filter type to use: gaussian, median, or noise
-    filter_type = "noise"
+    filter_type = "physical_sharp"
     assert filter_type == "gaussian" \
         or filter_type == "median" \
         or filter_type == "noise" \

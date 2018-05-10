@@ -7,7 +7,7 @@ import gc
 import logging
 import utils
 import os
-import scipy.ndimage as ndimage
+import filters
 
 
 # mpl.rcParams['figure.figsize'] = 6.5, 2.2
@@ -111,59 +111,69 @@ def spectra(folder, fname, ind):
     plt.close('all')
 
 
-def plot_tau(x_test, y_test, y_predict, plot_folder):
+def plot_tau(x_test, y_test, y_predict, plot_folder, filter_type, y_predict2=None):
     """Plot Reynolds stresses tau fields and pdf."""
+    dimension = len(y_test[0]['u'].shape)
+    k = filters.filter_size(filter_type, dimension)
 
-    if len(y_test[0]['u'].shape)==3:
-        sigma = [1, 1.1, 0.9]
+    if len(y_test[0]['u'].shape) == 3:
         logging.info('Plot tau')
         for test_example in range(3):
             tau = dict()
+            tau2 = dict()
             tau_true = dict()
             for u_i in ['u', 'v', 'w']:
                 for u_j in ['u', 'v', 'w']:
                     tmp = y_predict[test_example][u_i]*y_predict[test_example][u_j]
-                    tmp = ndimage.gaussian_filter(tmp, sigma=sigma[test_example], mode='wrap', truncate=500)
+                    tmp = filters.filter(tmp, filter_type, k=k[test_example])
                     tau[u_i+u_j] = x_test[test_example][u_i]*x_test[test_example][u_j] - tmp
                     tmp = y_test[test_example][u_i]*y_test[test_example][u_j]
-                    tmp = ndimage.gaussian_filter(tmp, sigma=sigma[test_example], mode='wrap', truncate=500)
+                    tmp = filters.filter(tmp, filter_type, k=k[test_example])
                     tau_true[u_i + u_j] = x_test[test_example][u_i] * x_test[test_example][u_j] - tmp
+                    if y_predict2:
+                        tmp = y_predict2[test_example][u_i]*y_predict2[test_example][u_j]
+                        tmp = filters.filter(tmp, filter_type, k=k[test_example])
+                        tau2[u_i + u_j] = x_test[test_example][u_i] * x_test[test_example][u_j] - tmp
 
             imagesc([tau_true['uu'][:, :, 32], tau_true['uv'][:, :, 32], tau_true['uw'][:, :, 32]],
-                    titles=[r'$\tau^{true}_{11}$', r'$\tau^{true}_{12}$', r'$\tau^{true}_{12}$'],
+                    titles=[r'$\tau^{true}_{11}$', r'$\tau^{true}_{12}$', r'$\tau^{true}_{13}$'],
                     name=os.path.join(plot_folder, 'tau_true{}'.format(test_example)), limits=[-0.07, 0.07])
             imagesc([tau['uu'][:, :, 32], tau['uv'][:, :, 32], tau['uw'][:, :, 32]],
-                    titles=[r'$\tau_{11}$', r'$\tau_{12}$', r'$\tau_{12}$'],
+                    titles=[r'$\tau_{11}$', r'$\tau_{12}$', r'$\tau_{13}$'],
                     name=os.path.join(plot_folder, 'tau{}'.format(test_example)), limits=[-0.07, 0.07])
 
             fig, axarr = plt.subplots(nrows=1, ncols=3, sharex=True, sharey=True, figsize=(6.5, 2.4))
+            titles = [r'$\tau_{11}$', r'$\tau_{12}$', r'$\tau_{13}$']
             for ind, key in enumerate(['uu', 'uv', 'uw']):
                 x, y = utils.pdf_from_array_with_x(tau_true[key], bins=100, range=[-0.1, 0.1])
-                axarr[ind].semilogy(x, y, label='true')
+                axarr[ind].semilogy(x, y, 'r-', lw=2, label='true')
                 x, y = utils.pdf_from_array_with_x(tau[key], bins=100, range=[-0.1, 0.1])
-                axarr[ind].semilogy(x, y, label='modeled')
+                axarr[ind].semilogy(x, y, 'b-', label='modeled')
+                if y_predict2:
+                    x, y = utils.pdf_from_array_with_x(tau2[key], bins=100, range=[-0.1, 0.1])
+                    axarr[ind].semilogy(x, y, 'g-', label='modeled 2')
+                axarr[ind].set_xlabel(titles[ind])
             axarr[0].axis(xmin=-0.1, xmax=0.1, ymin=1e-3)
             axarr[0].set_ylabel('pdf')
             axarr[0].set_yscale('log')
             plt.legend(loc=0)
-            fig.subplots_adjust(left=0.1, right=0.95, wspace=0.15, bottom=0.2, top=0.9)
+            fig.subplots_adjust(left=0.1, right=0.95, wspace=0.16, bottom=0.2, top=0.9)
             fig.savefig(os.path.join(plot_folder, 'tau_pdf{}'.format(test_example)))
-            del fig, axarr
-            gc.collect()
+            # print(os.path.join(plot_folder, 'tau_pdf{}'.format(test_example)))
+            plt.close('all')
 
 
-def plot_vorticity_pdf(x_test, y_test, y_predict, plot_folder):
+def plot_vorticity_pdf(x_test, y_test, y_predict, plot_folder, y_predict2=None):
     """ Plot normalized vorticity pdf."""
     shape = y_predict[0]['u'].shape
+    dimension = len(shape)
+    dx = np.divide([np.pi]*3, np.array(shape))
+    logging.info('Plot vorticity pdf')
+    for test_example in range(3):
+        fig = plt.figure(figsize=(4, 3))
+        ax = plt.gca()
 
-    if len(shape) == 2:
-        dx = np.divide([np.pi, np.pi], np.array(shape))
-
-        logging.info('Plot vorticity pdf')
-        for test_example in range(3):
-
-            fig = plt.figure(figsize=(4, 3))
-            ax = plt.gca()
+        if dimension == 2:
             _, du_dy = np.gradient(y_test[test_example]['u'], dx[0], dx[1])
             dv_dx, _ = np.gradient(y_test[test_example]['v'], dx[0], dx[1])
             vorticity = dv_dx - du_dy
@@ -183,17 +193,52 @@ def plot_vorticity_pdf(x_test, y_test, y_predict, plot_folder):
             vorticity = dv_dx - du_dy
             vorticity /= np.max(np.abs(vorticity))
             x, y = utils.pdf_from_array_with_x(vorticity, bins=100, range=[-1, 1])
-            ax.semilogy(x, y, label='predicted')
+            ax.semilogy(x, y, label='modeled')
 
-            ax.set_title('Vorticity pdf')
-            ax.set_ylabel('pdf')
-            ax.set_xlabel(r'$\omega$')
-            ax.axis(ymin=1e-3)
-            plt.legend(loc=0)
+            if y_predict2:
+                _, du_dy = np.gradient(y_predict2[test_example]['u'], dx[0], dx[1])
+                dv_dx, _ = np.gradient(y_predict2[test_example]['v'], dx[0], dx[1])
+                vorticity = dv_dx - du_dy
+                vorticity /= np.max(np.abs(vorticity))
+                x, y = utils.pdf_from_array_with_x(vorticity, bins=100, range=[-1, 1])
+                ax.semilogy(x, y, label='modeled 2')
 
-            fig.subplots_adjust(left=0.16, right=0.95, bottom=0.2, top=0.87)
-            fig.savefig(plot_folder + 'omega_{}'.format(test_example))
-            plt.close('all')
+        elif dimension == 3:
+            vort = utils.calc_vorticity_magnitude(y_test[test_example])
+            x, y = utils.pdf_from_array_with_x(vort.flatten(), bins=100, range=[-1, 1])
+            ax.semilogy(x, y, 'r-', label='true')
+
+            vort = utils.calc_vorticity_magnitude(x_test[test_example])
+            x, y = utils.pdf_from_array_with_x(vort.flatten(), bins=100, range=[-1, 1])
+            ax.semilogy(x, y, 'y-', label='filtered')
+
+            vort = utils.calc_vorticity_magnitude(y_predict[test_example])
+            x, y = utils.pdf_from_array_with_x(vort.flatten(), bins=100, range=[-1, 1])
+            ax.semilogy(x, y, 'b-', label='modeled')
+
+            if y_predict2:
+                vort = utils.calc_vorticity_magnitude(y_predict2[test_example])
+                x, y = utils.pdf_from_array_with_x(vort.flatten(), bins=100, range=[-1, 1])
+                ax.semilogy(x, y, 'g-', label='modeled 2')
+
+        # ax.set_title('Vorticity pdf')
+        ax.set_ylabel('pdf')
+        ax.set_xlabel(r'$\omega$')
+        ax.axis(ymin=1e-3)
+        plt.legend(loc=0)
+
+        fig.subplots_adjust(left=0.16, right=0.95, bottom=0.2, top=0.95)
+        fig.savefig(os.path.join(plot_folder, 'omega_{}'.format(test_example)))
+        print(os.path.join(plot_folder, 'omega_{}'.format(test_example)))
+        plt.close('all')
+
+
+
+
+
+
+
+
 
 
 def plot_velocities_and_spectra(x_test, y_test, y_predict, plot_folder):
@@ -234,7 +279,7 @@ def plot_velocities_and_spectra(x_test, y_test, y_predict, plot_folder):
                     [r'$u_{true}$', r'$u_{filtered}$', r'$u_{predicted}$'],
                     os.path.join(plot_folder, 'w_{}'.format(test_example)))
 
-    logging.info('Calculate ang plot spectra')
+    logging.info('Calculate and plot spectra')
     for test_example in range(3):
         utils.spectral_density(y_test[test_example],
                                os.path.join(plot_folder, 'true{}'.format(test_example)))

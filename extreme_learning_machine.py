@@ -4,7 +4,7 @@ import logging
 import utils    
 from time import time
 
-# nn_structure = [27, 100, 1]
+np.random.seed(1234)
 
 class Olga_ELM():
     def __init__(self, num_neurons, num_inputs):

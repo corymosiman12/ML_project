@@ -22,6 +22,22 @@ def pdf_from_array_with_x(array, bins, range):
     return x, pdf
 
 
+def calc_vorticity_magnitude(vel_dict):
+    shape = vel_dict['u'].shape
+    assert len(shape) == 3, "Incorrect dimension for vorticity calculation"
+    dx = np.divide([np.pi] * 3, np.array(shape))
+
+    vorticity = np.empty((3, shape[0], shape[1], shape[2]))
+    du_dx, du_dy, du_dz = np.gradient(vel_dict['u'], dx[0], dx[1], dx[2])
+    dv_dx, dv_dy, dv_dz = np.gradient(vel_dict['v'], dx[0], dx[1], dx[2])
+    dw_dx, dw_dy, dw_dz = np.gradient(vel_dict['w'], dx[0], dx[1], dx[2])
+    vorticity[0] = dw_dy - dv_dz
+    vorticity[1] = du_dz - dw_dx
+    vorticity[2] = dv_dx - du_dy
+    vorticity /= np.max(np.abs(vorticity))
+    # vort_magnitude = np.sqrt(vorticity[0] ** 2 + vorticity[1] ** 2 + vorticity[2] ** 2)
+    return vorticity
+
 def shell_average(spect, N_points, k):
     """ Compute the 1D, shell-averaged, spectrum of the 2D or 3D Fourier-space
     variable.
